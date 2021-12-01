@@ -1,0 +1,17 @@
+[package]
+name = "discorec"
+version = "0.1.0"
+description = "Recommendations for Rust using collaborative filtering"
+repository = "https://github.com/ankane/disco-rust"
+license = "MIT"
+authors = ["Andrew Kane <andrew@ankane.org>"]
+edition = "2018"
+readme = "README.md"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ndarray = "0.15.3"
+ndarray-rand = "0.14.0"
+rand = "0.8"
+sprs = "0.11.0"
