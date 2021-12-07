@@ -17,6 +17,12 @@ impl<T, U> Dataset<T, U> {
         }
     }
 
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            data: Vec::with_capacity(capacity)
+        }
+    }
+
     pub fn push(&mut self, user_id: T, item_id: U, value: f32) {
         self.data.push(Rating { user_id, item_id, value });
     }
@@ -31,5 +37,22 @@ impl<T, U> Dataset<T, U> {
 
     pub fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Dataset;
+
+    #[test]
+    fn test_new() {
+        let mut data = Dataset::new();
+        data.push(1, "A", 1.0);
+    }
+
+    #[test]
+    fn test_with_capacity() {
+        let mut data = Dataset::with_capacity(1);
+        data.push(1, "A", 1.0);
     }
 }
