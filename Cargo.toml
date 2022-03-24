@@ -12,6 +12,5 @@ readme = "README.md"
 
 [dependencies]
 ndarray = "0.15"
-ndarray-rand = "0.14"
 rand = "0.8"
 sprs = { version = "0.11", default-features = false }

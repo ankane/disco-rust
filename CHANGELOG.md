@@ -1,3 +1,7 @@
+## 0.1.2 (unreleased)
+
+- Reduced dependencies
+
 ## 0.1.1 (2021-12-09)
 
 - Added `with_capacity` to `Dataset`

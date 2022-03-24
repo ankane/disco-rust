@@ -1,8 +1,7 @@
 use crate::map::Map;
 use crate::Dataset;
 use ndarray::{Array, Array2, ArrayView1, Axis};
-use ndarray_rand::rand_distr::Uniform;
-use ndarray_rand::RandomExt;
+use rand::distributions::{Distribution, Uniform};
 use rand::rngs::StdRng;
 use rand::seq::index::sample;
 use rand::SeedableRng;
@@ -132,8 +131,11 @@ impl<'a> RecommenderBuilder<'a> {
             None => StdRng::from_entropy(),
         };
 
-        let user_factors = Array::random_using((users, factors), Uniform::new(0.0, end_range), &mut rng);
-        let item_factors = Array::random_using((items, factors), Uniform::new(0.0, end_range), &mut rng);
+        let uniform: Uniform<f32> = Uniform::new(0.0, end_range);
+        let mut rand_fn = || uniform.sample(&mut rng);
+
+        let user_factors = Array::from_shape_simple_fn((users, factors), &mut rand_fn);
+        let item_factors = Array::from_shape_simple_fn((items, factors), &mut rand_fn);
 
         let mut recommender = Recommender {
             user_map,
