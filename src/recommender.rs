@@ -360,10 +360,12 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
         self.item_map.ids()
     }
 
+    // TODO use to_slice().unwrap() to return Option<&[f32]> in 0.2.0
     pub fn user_factors(&self, user_id: &T) -> Option<ArrayView1<f32>> {
         self.user_map.get(user_id).map(|o| self.user_factors.row(*o) )
     }
 
+    // TODO use to_slice().unwrap() to return Option<&[f32]> in 0.2.0
     pub fn item_factors(&self, item_id: &U) -> Option<ArrayView1<f32>> {
         self.item_map.get(item_id).map(|o| self.item_factors.row(*o) )
     }
