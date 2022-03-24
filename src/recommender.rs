@@ -1,6 +1,6 @@
 use crate::map::Map;
 use crate::Dataset;
-use ndarray::{Array, Array1, Array2, ArrayView1, Axis};
+use ndarray::{Array, Array2, ArrayView1, Axis};
 use ndarray_rand::rand_distr::Uniform;
 use ndarray_rand::RandomExt;
 use rand::rngs::StdRng;
@@ -185,10 +185,10 @@ impl<'a> RecommenderBuilder<'a> {
             let k = factors;
             let ks = ((k as f32 * 0.08).round() as usize).max(1);
 
-            let mut g_slow: Array1<f32> = Array::ones(users);
-            let mut g_fast: Array1<f32> = Array::ones(users);
-            let mut h_slow: Array1<f32> = Array::ones(items);
-            let mut h_fast: Array1<f32> = Array::ones(items);
+            let mut g_slow: Vec<f32> = vec![1.0; users];
+            let mut g_fast: Vec<f32> = vec![1.0; users];
+            let mut h_slow: Vec<f32> = vec![1.0; items];
+            let mut h_fast: Vec<f32> = vec![1.0; items];
 
             for iteration in 0..self.iterations {
                 let mut train_loss = 0.0;
