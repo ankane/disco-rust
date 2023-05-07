@@ -40,6 +40,12 @@ impl<T, U> Dataset<T, U> {
     }
 }
 
+impl<T, U> Default for Dataset<T, U> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Dataset;

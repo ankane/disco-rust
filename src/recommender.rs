@@ -276,6 +276,12 @@ impl<'a> RecommenderBuilder<'a> {
     }
 }
 
+impl<'a> Default for RecommenderBuilder<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct Recommender<T, U> {
     user_map: Map<T>,
     item_map: Map<U>,
