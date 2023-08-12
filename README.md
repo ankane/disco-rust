@@ -122,7 +122,9 @@ fn main() {
 
 ## Storing Recommendations
 
-Save recommendations to your database. Alternatively, you can store only the factors and use a library like [pgvector-rust](https://github.com/ankane/pgvector-rust).
+Save recommendations to your database.
+
+Alternatively, you can store only the factors and use a library like [pgvector-rust](https://github.com/ankane/pgvector-rust). See an [example](https://github.com/pgvector/pgvector-rust/blob/master/examples/disco/src/main.rs).
 
 ## Algorithms
 
