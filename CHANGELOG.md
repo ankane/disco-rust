@@ -2,6 +2,7 @@
 
 - Reduced dependencies
 - Changed `user_factors` and `item_factors` to return slice
+- Updated Rust edition to 2021
 
 ## 0.1.2 (2022-09-06)
 

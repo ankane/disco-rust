@@ -5,7 +5,8 @@ description = "Recommendations for Rust using collaborative filtering"
 repository = "https://github.com/ankane/disco-rust"
 license = "MIT"
 authors = ["Andrew Kane <andrew@ankane.org>"]
-edition = "2018"
+edition = "2021"
+rust-version = "1.56.0"
 readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
