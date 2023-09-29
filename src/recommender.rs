@@ -5,7 +5,6 @@ use rand::distributions::{Distribution, Uniform};
 use rand::rngs::StdRng;
 use rand::seq::index::sample;
 use rand::SeedableRng;
-use sprs::{CsMat, TriMat};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
@@ -100,13 +99,30 @@ impl<'a> RecommenderBuilder<'a> {
         let mut col_inds = Vec::with_capacity(train_set.len());
         let mut values = Vec::with_capacity(train_set.len());
 
+        let mut cui = Vec::new();
+        let mut ciu = Vec::new();
+
         for rating in train_set.iter() {
             let u = user_map.add(rating.user_id.clone());
             let i = item_map.add(rating.item_id.clone());
 
-            row_inds.push(u);
-            col_inds.push(i);
-            values.push(if implicit { 1.0 + self.alpha * rating.value } else { rating.value });
+            if implicit {
+                if u == cui.len() {
+                    cui.push(Vec::new())
+                }
+
+                if i == ciu.len() {
+                    ciu.push(Vec::new())
+                }
+
+                let confidence = 1.0 + self.alpha * rating.value;
+                cui[u].push((i, confidence));
+                ciu[i].push((u, confidence));
+            } else {
+                row_inds.push(u);
+                col_inds.push(i);
+                values.push(rating.value);
+            }
 
             rated.entry(u).or_insert_with(HashSet::new).insert(i);
         }
@@ -153,16 +169,6 @@ impl<'a> RecommenderBuilder<'a> {
             // https://www.benfrederickson.com/fast-implicit-matrix-factorization/
 
             let regularization = self.regularization.unwrap_or(0.01);
-
-            let cui = TriMat::from_triplets(
-                (users, items),
-                row_inds,
-                col_inds,
-                values,
-            ).to_csr();
-
-            // equivalent to transposing csr
-            let ciu = cui.to_csc();
 
             for iteration in 0..self.iterations {
                 least_squares_cg(&cui, &mut recommender.user_factors, &recommender.item_factors, regularization);
@@ -385,20 +391,20 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     }
 }
 
-fn least_squares_cg(cui: &CsMat<f32>, x: &mut Array2<f32>, y: &Array2<f32>, regularization: f32) {
+fn least_squares_cg(cui: &Vec<Vec<(usize, f32)>>, x: &mut Array2<f32>, y: &Array2<f32>, regularization: f32) {
     let cg_steps = 3;
 
     let factors = x.ncols();
     let yty = y.t().dot(y) + regularization * Array::eye(factors);
 
-    for (u, row_vec) in cui.outer_iterator().enumerate() {
+    for (u, row_vec) in cui.iter().enumerate() {
         // start from previous iteration
         let mut xi = x.row_mut(u);
 
         // calculate residual r = (YtCuPu - (YtCuY.dot(Xu), without computing YtCuY
         let mut r = -yty.dot(&xi);
         for (i, confidence) in row_vec.iter() {
-            r.scaled_add(confidence - (confidence - 1.0) * y.row(i).dot(&xi), &y.row(i));
+            r.scaled_add(confidence - (confidence - 1.0) * y.row(*i).dot(&xi), &y.row(*i));
         }
 
         let mut p = r.clone();
@@ -408,7 +414,7 @@ fn least_squares_cg(cui: &CsMat<f32>, x: &mut Array2<f32>, y: &Array2<f32>, regu
             // calculate Ap = YtCuYp - without actually calculating YtCuY
             let mut ap = yty.dot(&p);
             for (i, confidence) in row_vec.iter() {
-                ap.scaled_add((confidence - 1.0) * y.row(i).dot(&p), &y.row(i));
+                ap.scaled_add((confidence - 1.0) * y.row(*i).dot(&p), &y.row(*i));
             }
 
             // standard CG update
