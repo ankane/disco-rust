@@ -7,11 +7,7 @@ pub struct Matrix {
 impl Matrix {
     pub fn new(rows: usize, cols: usize) -> Self {
         let data = vec![0.0; rows * cols];
-        Self {
-            rows,
-            cols,
-            data,
-        }
+        Self { rows, cols, data }
     }
 
     pub fn row_mut(&mut self, i: usize) -> &mut [f32] {

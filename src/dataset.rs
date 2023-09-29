@@ -12,19 +12,21 @@ pub struct Dataset<T, U> {
 
 impl<T, U> Dataset<T, U> {
     pub fn new() -> Self {
-        Self {
-            data: Vec::new()
-        }
+        Self { data: Vec::new() }
     }
 
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
-            data: Vec::with_capacity(capacity)
+            data: Vec::with_capacity(capacity),
         }
     }
 
     pub fn push(&mut self, user_id: T, item_id: U, value: f32) {
-        self.data.push(Rating { user_id, item_id, value });
+        self.data.push(Rating {
+            user_id,
+            item_id,
+            value,
+        });
     }
 
     pub(crate) fn iter(&self) -> Iter<Rating<T, U>> {

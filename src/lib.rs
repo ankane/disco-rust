@@ -28,11 +28,19 @@ mod tests {
 
         let recommender = Recommender::fit_implicit(&data);
 
-        let mut item_ids = recommender.user_recs(&1, 5).iter().map(|v| v.0).collect::<Vec<&&str>>();
+        let mut item_ids = recommender
+            .user_recs(&1, 5)
+            .iter()
+            .map(|v| v.0)
+            .collect::<Vec<&&str>>();
         item_ids.sort();
         assert_eq!(item_ids, vec![&"E", &"F"]);
 
-        let mut item_ids = recommender.user_recs(&2, 5).iter().map(|v| v.0).collect::<Vec<&&str>>();
+        let mut item_ids = recommender
+            .user_recs(&2, 5)
+            .iter()
+            .map(|v| v.0)
+            .collect::<Vec<&&str>>();
         item_ids.sort();
         assert_eq!(item_ids, vec![&"A", &"B"]);
     }
@@ -45,7 +53,11 @@ mod tests {
         data.push(2, "C", 1.0);
 
         let recommender = Recommender::fit_implicit(&data);
-        let item_ids = recommender.item_recs(&"A", 5).iter().map(|v| v.0).collect::<Vec<&&str>>();
+        let item_ids = recommender
+            .item_recs(&"A", 5)
+            .iter()
+            .map(|v| v.0)
+            .collect::<Vec<&&str>>();
         assert_eq!(item_ids, vec![&"B", &"C"]);
     }
 

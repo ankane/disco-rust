@@ -76,19 +76,34 @@ impl<'a> RecommenderBuilder<'a> {
         self
     }
 
-    pub fn fit_explicit<T: Clone + Eq + Hash, U: Clone + Eq + Hash>(&self, train_set: &Dataset<T, U>) -> Recommender<T, U> {
+    pub fn fit_explicit<T: Clone + Eq + Hash, U: Clone + Eq + Hash>(
+        &self,
+        train_set: &Dataset<T, U>,
+    ) -> Recommender<T, U> {
         self.fit(train_set, None, false)
     }
 
-    pub fn fit_implicit<T: Clone + Eq + Hash, U: Clone + Eq + Hash>(&self, train_set: &Dataset<T, U>) -> Recommender<T, U> {
+    pub fn fit_implicit<T: Clone + Eq + Hash, U: Clone + Eq + Hash>(
+        &self,
+        train_set: &Dataset<T, U>,
+    ) -> Recommender<T, U> {
         self.fit(train_set, None, true)
     }
 
-    pub fn fit_eval_explicit<T: Clone + Eq + Hash, U: Clone + Eq + Hash>(&self, train_set: &Dataset<T, U>, valid_set: &Dataset<T, U>) -> Recommender<T, U> {
+    pub fn fit_eval_explicit<T: Clone + Eq + Hash, U: Clone + Eq + Hash>(
+        &self,
+        train_set: &Dataset<T, U>,
+        valid_set: &Dataset<T, U>,
+    ) -> Recommender<T, U> {
         self.fit(train_set, Some(valid_set), false)
     }
 
-    fn fit<T: Clone + Eq + Hash, U: Clone + Eq + Hash>(&self, train_set: &Dataset<T, U>, valid_set: Option<&Dataset<T, U>>, implicit: bool) -> Recommender<T, U> {
+    fn fit<T: Clone + Eq + Hash, U: Clone + Eq + Hash>(
+        &self,
+        train_set: &Dataset<T, U>,
+        valid_set: Option<&Dataset<T, U>>,
+        implicit: bool,
+    ) -> Recommender<T, U> {
         let factors = self.factors as usize;
 
         let mut user_map = Map::new();
@@ -136,11 +151,7 @@ impl<'a> RecommenderBuilder<'a> {
             values.iter().sum::<f32>() / values.len() as f32
         };
 
-        let end_range = if implicit {
-            0.01
-        } else {
-            0.1
-        };
+        let end_range = if implicit { 0.01 } else { 0.1 };
 
         let mut rng = match self.seed {
             Some(s) => StdRng::seed_from_u64(s),
@@ -171,8 +182,18 @@ impl<'a> RecommenderBuilder<'a> {
             let regularization = self.regularization.unwrap_or(0.01);
 
             for iteration in 0..self.iterations {
-                least_squares_cg(&cui, &mut recommender.user_factors, &recommender.item_factors, regularization);
-                least_squares_cg(&ciu, &mut recommender.item_factors, &recommender.user_factors, regularization);
+                least_squares_cg(
+                    &cui,
+                    &mut recommender.user_factors,
+                    &recommender.item_factors,
+                    regularization,
+                );
+                least_squares_cg(
+                    &ciu,
+                    &mut recommender.item_factors,
+                    &recommender.user_factors,
+                    regularization,
+                );
 
                 if let Some(callback) = &self.callback {
                     let info = FitInfo {
@@ -339,15 +360,28 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
         predictions.truncate(count + rated.len());
         predictions.retain(|v| !rated.contains(&v.0));
         predictions.truncate(count);
-        predictions.iter().map(|v| (self.item_map.lookup(v.0), *v.1) ).collect()
+        predictions
+            .iter()
+            .map(|v| (self.item_map.lookup(v.0), *v.1))
+            .collect()
     }
 
     pub fn item_recs(&self, item_id: &U, count: usize) -> Vec<(&U, f32)> {
-        similar(&self.item_map, self.normalized_item_factors(), item_id, count)
+        similar(
+            &self.item_map,
+            self.normalized_item_factors(),
+            item_id,
+            count,
+        )
     }
 
     pub fn similar_users(&self, user_id: &T, count: usize) -> Vec<(&T, f32)> {
-        similar(&self.user_map, self.normalized_user_factors(), user_id, count)
+        similar(
+            &self.user_map,
+            self.normalized_user_factors(),
+            user_id,
+            count,
+        )
     }
 
     fn normalized_user_factors(&self) -> &RefCell<Option<Matrix>> {
@@ -373,11 +407,15 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     }
 
     pub fn user_factors(&self, user_id: &T) -> Option<&[f32]> {
-        self.user_map.get(user_id).map(|o| self.user_factors.row(*o) )
+        self.user_map
+            .get(user_id)
+            .map(|o| self.user_factors.row(*o))
     }
 
     pub fn item_factors(&self, item_id: &U) -> Option<&[f32]> {
-        self.item_map.get(item_id).map(|o| self.item_factors.row(*o) )
+        self.item_map
+            .get(item_id)
+            .map(|o| self.item_factors.row(*o))
     }
 
     pub fn global_mean(&self) -> f32 {
@@ -385,7 +423,12 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     }
 
     pub fn rmse(&self, data: &Dataset<T, U>) -> f32 {
-        (data.iter().map(|r| (self.predict(&r.user_id, &r.item_id) - r.value).powf(2.0)).sum::<f32>() / data.len() as f32).sqrt()
+        (data
+            .iter()
+            .map(|r| (self.predict(&r.user_id, &r.item_id) - r.value).powf(2.0))
+            .sum::<f32>()
+            / data.len() as f32)
+            .sqrt()
     }
 }
 
@@ -416,7 +459,11 @@ fn least_squares_cg(cui: &[Vec<(usize, f32)>], x: &mut Matrix, y: &Matrix, regul
         let mut r = yty.dot(xi);
         neg(&mut r);
         for (i, confidence) in row_vec.iter() {
-            scaled_add(&mut r, confidence - (confidence - 1.0) * dot(y.row(*i), xi), y.row(*i));
+            scaled_add(
+                &mut r,
+                confidence - (confidence - 1.0) * dot(y.row(*i), xi),
+                y.row(*i),
+            );
         }
 
         let mut p = r.clone();
@@ -456,7 +503,12 @@ fn create_factors(rows: usize, cols: usize, init_fn: &mut impl FnMut() -> f32) -
     m
 }
 
-fn similar<'a, T: Clone + Eq + Hash>(map: &'a Map<T>, norm_factors: &RefCell<Option<Matrix>>, id: &T, count: usize) -> Vec<(&'a T, f32)> {
+fn similar<'a, T: Clone + Eq + Hash>(
+    map: &'a Map<T>,
+    norm_factors: &RefCell<Option<Matrix>>,
+    id: &T,
+    count: usize,
+) -> Vec<(&'a T, f32)> {
     let i = match map.get(id) {
         Some(o) => *o,
         None => return Vec::new(),
@@ -471,7 +523,10 @@ fn similar<'a, T: Clone + Eq + Hash>(map: &'a Map<T>, norm_factors: &RefCell<Opt
     predictions.truncate(count + 1);
     predictions.retain(|v| v.0 != i);
     predictions.truncate(count);
-    predictions.iter().map(|v| (map.lookup(v.0), *v.1)).collect()
+    predictions
+        .iter()
+        .map(|v| (map.lookup(v.0), *v.1))
+        .collect()
 }
 
 fn normalize(factors: &Matrix) -> Matrix {
