@@ -1,3 +1,7 @@
+## 0.1.3 (unreleased)
+
+- Reduced dependencies
+
 ## 0.1.2 (2022-09-06)
 
 - Reduced dependencies
