@@ -166,6 +166,19 @@ RecommenderBuilder::new()
 
 The loss function is RMSE
 
+## Cold Start
+
+Collaborative filtering suffers from the [cold start problem](https://en.wikipedia.org/wiki/Cold_start_(recommender_systems)). It’s unable to make good recommendations without data on a user or item, which is problematic for new users and items.
+
+```rust
+recommender.user_recs(&new_user_id, 5); // returns empty array
+```
+
+There are a number of ways to deal with this, but here are some common ones:
+
+- For user-based recommendations, show new users the most popular items
+- For item-based recommendations, make content-based recommendations
+
 ## Reference
 
 Get ids
