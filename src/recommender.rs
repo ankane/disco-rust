@@ -1,6 +1,6 @@
 use crate::map::Map;
+use crate::matrix::Matrix;
 use crate::Dataset;
-use ndarray::{Array, Array2, ArrayView1, Axis};
 use rand::distributions::{Distribution, Uniform};
 use rand::rngs::StdRng;
 use rand::seq::index::sample;
@@ -150,8 +150,8 @@ impl<'a> RecommenderBuilder<'a> {
         let uniform: Uniform<f32> = Uniform::new(0.0, end_range);
         let mut rand_fn = || uniform.sample(&mut rng);
 
-        let user_factors = Array::from_shape_simple_fn((users, factors), &mut rand_fn);
-        let item_factors = Array::from_shape_simple_fn((items, factors), &mut rand_fn);
+        let user_factors = create_factors(users, factors, &mut rand_fn);
+        let item_factors = create_factors(items, factors, &mut rand_fn);
 
         let mut recommender = Recommender {
             user_map,
@@ -206,9 +206,9 @@ impl<'a> RecommenderBuilder<'a> {
                     let u = row_inds[j];
                     let v = col_inds[j];
 
-                    let mut pu = recommender.user_factors.row_mut(u);
-                    let mut qv = recommender.item_factors.row_mut(v);
-                    let e = values[j] - pu.dot(&qv);
+                    let pu = recommender.user_factors.row_mut(u);
+                    let qv = recommender.item_factors.row_mut(v);
+                    let e = values[j] - dot(pu, qv);
 
                     // slow learner
                     let mut g_hat = 0.0;
@@ -293,13 +293,13 @@ pub struct Recommender<T, U> {
     item_map: Map<U>,
     rated: HashMap<usize, HashSet<usize>>,
     global_mean: f32,
-    user_factors: Array2<f32>,
-    item_factors: Array2<f32>,
+    user_factors: Matrix,
+    item_factors: Matrix,
 
     // use lazy initialization to save memory
     // https://doc.rust-lang.org/std/cell/#implementation-details-of-logically-immutable-methods
-    normalized_user_factors: RefCell<Option<Array2<f32>>>,
-    normalized_item_factors: RefCell<Option<Array2<f32>>>,
+    normalized_user_factors: RefCell<Option<Matrix>>,
+    normalized_item_factors: RefCell<Option<Matrix>>,
 }
 
 impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
@@ -323,7 +323,7 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
             None => return self.global_mean,
         };
 
-        self.user_factors.row(i).dot(&self.item_factors.row(j))
+        dot(self.user_factors.row(i), self.item_factors.row(j))
     }
 
     pub fn user_recs(&self, user_id: &T, count: usize) -> Vec<(&U, f32)> {
@@ -333,7 +333,7 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
         };
 
         let rated = self.rated.get(&i).unwrap();
-        let predictions = self.item_factors.dot(&self.user_factors.row(i));
+        let predictions = self.item_factors.dot(self.user_factors.row(i));
         let mut predictions: Vec<_> = predictions.iter().enumerate().collect();
         predictions.sort_by(|a, b| b.1.partial_cmp(a.1).unwrap());
         predictions.truncate(count + rated.len());
@@ -350,14 +350,14 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
         similar(&self.user_map, self.normalized_user_factors(), user_id, count)
     }
 
-    fn normalized_user_factors(&self) -> &RefCell<Option<Array2<f32>>> {
+    fn normalized_user_factors(&self) -> &RefCell<Option<Matrix>> {
         self.normalized_user_factors
             .borrow_mut()
             .get_or_insert_with(|| normalize(&self.user_factors));
         &self.normalized_user_factors
     }
 
-    fn normalized_item_factors(&self) -> &RefCell<Option<Array2<f32>>> {
+    fn normalized_item_factors(&self) -> &RefCell<Option<Matrix>> {
         self.normalized_item_factors
             .borrow_mut()
             .get_or_insert_with(|| normalize(&self.item_factors));
@@ -372,13 +372,11 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
         self.item_map.ids()
     }
 
-    // TODO use to_slice().unwrap() to return Option<&[f32]> in 0.2.0
-    pub fn user_factors(&self, user_id: &T) -> Option<ArrayView1<f32>> {
+    pub fn user_factors(&self, user_id: &T) -> Option<&[f32]> {
         self.user_map.get(user_id).map(|o| self.user_factors.row(*o) )
     }
 
-    // TODO use to_slice().unwrap() to return Option<&[f32]> in 0.2.0
-    pub fn item_factors(&self, item_id: &U) -> Option<ArrayView1<f32>> {
+    pub fn item_factors(&self, item_id: &U) -> Option<&[f32]> {
         self.item_map.get(item_id).map(|o| self.item_factors.row(*o) )
     }
 
@@ -391,49 +389,74 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     }
 }
 
-fn least_squares_cg(cui: &Vec<Vec<(usize, f32)>>, x: &mut Array2<f32>, y: &Array2<f32>, regularization: f32) {
+fn least_squares_cg(cui: &[Vec<(usize, f32)>], x: &mut Matrix, y: &Matrix, regularization: f32) {
     let cg_steps = 3;
 
-    let factors = x.ncols();
-    let yty = y.t().dot(y) + regularization * Array::eye(factors);
+    // calculate YtY
+    let factors = x.cols;
+    let mut yty = Matrix::new(factors, factors);
+    for i in 0..factors {
+        for j in 0..factors {
+            let mut sum = 0.0;
+            for k in 0..y.rows {
+                sum += y.data[k * factors + i] * y.data[k * factors + j];
+            }
+            yty.data[i * factors + j] = sum;
+        }
+    }
+    for i in 0..factors {
+        yty.data[i * factors + i] += regularization;
+    }
 
     for (u, row_vec) in cui.iter().enumerate() {
         // start from previous iteration
-        let mut xi = x.row_mut(u);
+        let xi = x.row_mut(u);
 
         // calculate residual r = (YtCuPu - (YtCuY.dot(Xu), without computing YtCuY
-        let mut r = -yty.dot(&xi);
+        let mut r = yty.dot(xi);
+        neg(&mut r);
         for (i, confidence) in row_vec.iter() {
-            r.scaled_add(confidence - (confidence - 1.0) * y.row(*i).dot(&xi), &y.row(*i));
+            scaled_add(&mut r, confidence - (confidence - 1.0) * dot(y.row(*i), xi), y.row(*i));
         }
 
         let mut p = r.clone();
-        let mut rsold = r.dot(&r);
+        let mut rsold = dot(&r, &r);
 
         for _ in 0..cg_steps {
             // calculate Ap = YtCuYp - without actually calculating YtCuY
             let mut ap = yty.dot(&p);
             for (i, confidence) in row_vec.iter() {
-                ap.scaled_add((confidence - 1.0) * y.row(*i).dot(&p), &y.row(*i));
+                scaled_add(&mut ap, (confidence - 1.0) * dot(y.row(*i), &p), y.row(*i));
             }
 
             // standard CG update
-            let alpha = rsold / p.dot(&ap);
-            xi.scaled_add(alpha, &p);
-            r.scaled_add(-alpha, &ap);
-            let rsnew = r.dot(&r);
+            let alpha = rsold / dot(&p, &ap);
+            scaled_add(xi, alpha, &p);
+            scaled_add(&mut r, -alpha, &ap);
+            let rsnew = dot(&r, &r);
 
             if rsnew < 1e-20 {
                 break;
             }
 
-            p = &r + (rsnew / rsold) * p;
+            let rs = rsnew / rsold;
+            for i in 0..p.len() {
+                p[i] = r[i] + rs * p[i];
+            }
             rsold = rsnew;
         }
     }
 }
 
-fn similar<'a, T: Clone + Eq + Hash>(map: &'a Map<T>, norm_factors: &RefCell<Option<Array2<f32>>>, id: &T, count: usize) -> Vec<(&'a T, f32)> {
+fn create_factors(rows: usize, cols: usize, init_fn: &mut impl FnMut() -> f32) -> Matrix {
+    let mut m = Matrix::new(rows, cols);
+    for i in 0..(rows * cols) {
+        m.data[i] = init_fn();
+    }
+    m
+}
+
+fn similar<'a, T: Clone + Eq + Hash>(map: &'a Map<T>, norm_factors: &RefCell<Option<Matrix>>, id: &T, count: usize) -> Vec<(&'a T, f32)> {
     let i = match map.get(id) {
         Some(o) => *o,
         None => return Vec::new(),
@@ -442,7 +465,7 @@ fn similar<'a, T: Clone + Eq + Hash>(map: &'a Map<T>, norm_factors: &RefCell<Opt
     let borrowed = norm_factors.borrow();
     let norm_factors = borrowed.as_ref().unwrap();
 
-    let predictions = norm_factors.dot(&norm_factors.row(i));
+    let predictions = norm_factors.dot(norm_factors.row(i));
     let mut predictions: Vec<_> = predictions.iter().enumerate().collect();
     predictions.sort_by(|a, b| b.1.partial_cmp(a.1).unwrap());
     predictions.truncate(count + 1);
@@ -451,8 +474,38 @@ fn similar<'a, T: Clone + Eq + Hash>(map: &'a Map<T>, norm_factors: &RefCell<Opt
     predictions.iter().map(|v| (map.lookup(v.0), *v.1)).collect()
 }
 
-fn normalize(factors: &Array2<f32>) -> Array2<f32> {
-    let norms = (factors * factors).sum_axis(Axis(1)).mapv(f32::sqrt);
-    let norms = norms.mapv(|v| if v == 0.0 { 1e-10 } else { v });
-    factors / norms.insert_axis(Axis(1))
+fn normalize(factors: &Matrix) -> Matrix {
+    let mut res = Matrix::new(factors.rows, factors.cols);
+
+    for i in 0..factors.rows {
+        let frow = factors.row(i);
+        let mut norm = frow.iter().map(|v| v * v).sum::<f32>().sqrt();
+
+        if norm <= 0.0 {
+            norm = 1e-10
+        }
+
+        let row = res.row_mut(i);
+        for j in 0..row.len() {
+            row[j] = frow[j] / norm;
+        }
+    }
+
+    res
+}
+
+fn dot(a: &[f32], b: &[f32]) -> f32 {
+    a.iter().zip(b).map(|(ai, bi)| ai * bi).sum()
+}
+
+fn scaled_add(x: &mut [f32], a: f32, v: &[f32]) {
+    for i in 0..x.len() {
+        x[i] += a * v[i]
+    }
+}
+
+fn neg(x: &mut [f32]) {
+    for v in x {
+        *v *= -1.0
+    }
 }

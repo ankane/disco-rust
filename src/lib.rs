@@ -4,6 +4,7 @@
 
 mod dataset;
 mod map;
+mod matrix;
 mod recommender;
 
 pub use dataset::Dataset;

@@ -1,6 +1,7 @@
-## 0.1.3 (unreleased)
+## 0.2.0 (unreleased)
 
 - Reduced dependencies
+- Changed `user_factors` and `item_factors` to return slice
 
 ## 0.1.2 (2022-09-06)
 
