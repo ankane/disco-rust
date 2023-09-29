@@ -2,7 +2,6 @@ use crate::map::Map;
 use crate::matrix::Matrix;
 use crate::Dataset;
 use rand::rngs::StdRng;
-use rand::seq::index::sample;
 use rand::RngCore;
 use rand::SeedableRng;
 use std::cell::RefCell;
@@ -220,7 +219,7 @@ impl<'a> RecommenderBuilder<'a> {
                 let mut train_loss = 0.0;
 
                 // shuffle for each iteration
-                for j in sample(&mut rng, train_set.len(), train_set.len()) {
+                for j in sample(&mut rng, train_set.len()) {
                     let u = row_inds[j];
                     let v = col_inds[j];
 
@@ -561,4 +560,18 @@ fn neg(x: &mut [f32]) {
     for v in x {
         *v *= -1.0
     }
+}
+
+fn sample(rng: &mut StdRng, n: usize) -> Vec<usize> {
+    let mut v = Vec::with_capacity(n);
+    for i in 0..n {
+        v.push(i);
+    }
+    // Fisher–Yates shuffle
+    for i in (1..=n - 1).rev() {
+        let uniform = rng.next_u32() as f64 / (u32::MAX as f64 + 1.0);
+        let j = (uniform * (i as f64 + 1.0)) as usize;
+        (v[i], v[j]) = (v[j], v[i]);
+    }
+    v
 }
