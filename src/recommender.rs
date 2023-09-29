@@ -1,9 +1,9 @@
 use crate::map::Map;
 use crate::matrix::Matrix;
 use crate::Dataset;
-use rand::distributions::{Distribution, Uniform};
 use rand::rngs::StdRng;
 use rand::seq::index::sample;
+use rand::RngCore;
 use rand::SeedableRng;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
@@ -158,11 +158,8 @@ impl<'a> RecommenderBuilder<'a> {
             None => StdRng::from_entropy(),
         };
 
-        let uniform: Uniform<f32> = Uniform::new(0.0, end_range);
-        let mut rand_fn = || uniform.sample(&mut rng);
-
-        let user_factors = create_factors(users, factors, &mut rand_fn);
-        let item_factors = create_factors(items, factors, &mut rand_fn);
+        let user_factors = create_factors(users, factors, &mut rng, end_range);
+        let item_factors = create_factors(items, factors, &mut rng, end_range);
 
         let mut recommender = Recommender {
             user_map,
@@ -495,10 +492,11 @@ fn least_squares_cg(cui: &[Vec<(usize, f32)>], x: &mut Matrix, y: &Matrix, regul
     }
 }
 
-fn create_factors(rows: usize, cols: usize, init_fn: &mut impl FnMut() -> f32) -> Matrix {
+fn create_factors(rows: usize, cols: usize, rng: &mut StdRng, end_range: f32) -> Matrix {
     let mut m = Matrix::new(rows, cols);
     for i in 0..(rows * cols) {
-        m.data[i] = init_fn();
+        let uniform = (rng.next_u32() as f64 / u32::MAX as f64) as f32;
+        m.data[i] = uniform * end_range;
     }
     m
 }
