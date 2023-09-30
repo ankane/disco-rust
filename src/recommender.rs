@@ -13,7 +13,6 @@ pub struct FitInfo {
     pub valid_loss: f32,
 }
 
-#[derive(Debug)]
 pub struct RecommenderBuilder<'a> {
     factors: u32,
     iterations: u32,
