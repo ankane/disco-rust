@@ -71,7 +71,9 @@ Get similar users
 recommender.similar_users(&user_id, 5);
 ```
 
-## Example
+## Examples
+
+### MovieLens
 
 Download the [MovieLens 100K dataset](https://grouplens.org/datasets/movielens/100k/).
 
