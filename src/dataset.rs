@@ -7,6 +7,7 @@ pub(crate) struct Rating<T, U> {
     pub value: f32,
 }
 
+/// A dataset.
 #[derive(Clone, Debug)]
 pub struct Dataset<T, U> {
     data: Vec<Rating<T, U>>,

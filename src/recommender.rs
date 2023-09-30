@@ -6,6 +6,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
+/// Information about a training iteration.
 #[derive(Clone, Debug)]
 pub struct FitInfo {
     pub iteration: u32,
@@ -13,6 +14,7 @@ pub struct FitInfo {
     pub valid_loss: f32,
 }
 
+/// A recommender builder.
 pub struct RecommenderBuilder<'a> {
     factors: u32,
     iterations: u32,
@@ -314,6 +316,7 @@ impl<'a> Default for RecommenderBuilder<'a> {
     }
 }
 
+/// A recommender.
 pub struct Recommender<T, U> {
     user_map: Map<T>,
     item_map: Map<U>,
