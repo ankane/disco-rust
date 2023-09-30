@@ -95,7 +95,6 @@ struct Row {
     user_id: i32,
     item_id: i32,
     rating: f32,
-    time: i32,
 }
 
 fn main() {
