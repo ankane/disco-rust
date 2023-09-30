@@ -1,9 +1,7 @@
 use crate::map::Map;
 use crate::matrix::Matrix;
+use crate::prng::Prng;
 use crate::Dataset;
-use rand::rngs::StdRng;
-use rand::RngCore;
-use rand::SeedableRng;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
@@ -152,13 +150,13 @@ impl<'a> RecommenderBuilder<'a> {
 
         let end_range = if implicit { 0.01 } else { 0.1 };
 
-        let mut rng = match self.seed {
-            Some(s) => StdRng::seed_from_u64(s),
-            None => StdRng::from_entropy(),
+        let mut prng = match self.seed {
+            Some(s) => Prng::from_seed(s),
+            None => Prng::new(),
         };
 
-        let user_factors = create_factors(users, factors, &mut rng, end_range);
-        let item_factors = create_factors(items, factors, &mut rng, end_range);
+        let user_factors = create_factors(users, factors, &mut prng, end_range);
+        let item_factors = create_factors(items, factors, &mut prng, end_range);
 
         let mut recommender = Recommender {
             user_map,
@@ -219,7 +217,7 @@ impl<'a> RecommenderBuilder<'a> {
                 let mut train_loss = 0.0;
 
                 // shuffle for each iteration
-                for j in sample(&mut rng, train_set.len()) {
+                for j in sample(&mut prng, train_set.len()) {
                     let u = row_inds[j];
                     let v = col_inds[j];
 
@@ -491,11 +489,10 @@ fn least_squares_cg(cui: &[Vec<(usize, f32)>], x: &mut Matrix, y: &Matrix, regul
     }
 }
 
-fn create_factors(rows: usize, cols: usize, rng: &mut StdRng, end_range: f32) -> Matrix {
+fn create_factors(rows: usize, cols: usize, prng: &mut Prng, end_range: f32) -> Matrix {
     let mut m = Matrix::new(rows, cols);
     for i in 0..(rows * cols) {
-        let uniform = (rng.next_u32() as f64 / u32::MAX as f64) as f32;
-        m.data[i] = uniform * end_range;
+        m.data[i] = (prng.next() as f32) * end_range;
     }
     m
 }
@@ -562,15 +559,14 @@ fn neg(x: &mut [f32]) {
     }
 }
 
-fn sample(rng: &mut StdRng, n: usize) -> Vec<usize> {
+fn sample(prng: &mut Prng, n: usize) -> Vec<usize> {
     let mut v = Vec::with_capacity(n);
     for i in 0..n {
         v.push(i);
     }
     // Fisher–Yates shuffle
     for i in (1..=n - 1).rev() {
-        let uniform = rng.next_u32() as f64 / (u32::MAX as f64 + 1.0);
-        let j = (uniform * (i as f64 + 1.0)) as usize;
+        let j = (prng.next() * (i as f64 + 1.0)) as usize;
         (v[i], v[j]) = (v[j], v[i]);
     }
     v

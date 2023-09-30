@@ -1,6 +1,6 @@
 ## 0.2.0 (unreleased)
 
-- Reduced dependencies
+- Removed all dependencies
 - Changed `user_factors` and `item_factors` to return slice
 - Updated Rust edition to 2021
 
