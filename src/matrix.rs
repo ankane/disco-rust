@@ -1,3 +1,4 @@
+#[derive(Clone, Debug)]
 pub struct Matrix {
     pub(crate) rows: usize,
     pub(crate) cols: usize,
