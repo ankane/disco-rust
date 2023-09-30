@@ -1,11 +1,13 @@
 use std::slice::Iter;
 
+#[derive(Clone, Debug)]
 pub(crate) struct Rating<T, U> {
     pub user_id: T,
     pub item_id: U,
     pub value: f32,
 }
 
+#[derive(Clone, Debug)]
 pub struct Dataset<T, U> {
     data: Vec<Rating<T, U>>,
 }
