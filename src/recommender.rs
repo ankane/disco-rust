@@ -13,6 +13,7 @@ pub struct FitInfo {
     pub valid_loss: f32,
 }
 
+#[derive(Debug)]
 pub struct RecommenderBuilder<'a> {
     factors: u32,
     iterations: u32,
@@ -24,6 +25,7 @@ pub struct RecommenderBuilder<'a> {
 }
 
 impl<'a> RecommenderBuilder<'a> {
+    /// Starts a new recommender.
     pub fn new() -> Self {
         Self {
             factors: 8,
@@ -38,41 +40,49 @@ impl<'a> RecommenderBuilder<'a> {
         }
     }
 
+    /// Sets the number of factors.
     pub fn factors(&mut self, value: u32) -> &mut Self {
         self.factors = value;
         self
     }
 
+    /// Sets the number of iterations.
     pub fn iterations(&mut self, value: u32) -> &mut Self {
         self.iterations = value;
         self
     }
 
+    /// Sets the regularization.
     pub fn regularization(&mut self, value: f32) -> &mut Self {
         self.regularization = Some(value);
         self
     }
 
+    /// Sets the learning rate.
     pub fn learning_rate(&mut self, value: f32) -> &mut Self {
         self.learning_rate = value;
         self
     }
 
+    /// Sets alpha.
     pub fn alpha(&mut self, value: f32) -> &mut Self {
         self.alpha = value;
         self
     }
 
+    /// Sets the callback for each iteration.
     pub fn callback<C: 'a + Fn(FitInfo)>(&mut self, value: C) -> &mut Self {
         self.callback = Some(Box::new(value));
         self
     }
 
+    /// Sets the random seed.
     pub fn seed(&mut self, value: u64) -> &mut Self {
         self.seed = Some(value);
         self
     }
 
+    /// Creates a recommender with explicit feedback.
     pub fn fit_explicit<T: Clone + Eq + Hash, U: Clone + Eq + Hash>(
         &self,
         train_set: &Dataset<T, U>,
@@ -80,6 +90,7 @@ impl<'a> RecommenderBuilder<'a> {
         self.fit(train_set, None, false)
     }
 
+    /// Creates a recommender with implicit feedback.
     pub fn fit_implicit<T: Clone + Eq + Hash, U: Clone + Eq + Hash>(
         &self,
         train_set: &Dataset<T, U>,
@@ -87,6 +98,7 @@ impl<'a> RecommenderBuilder<'a> {
         self.fit(train_set, None, true)
     }
 
+    /// Creates a recommender with explicit feedback and performs cross-validation.
     pub fn fit_eval_explicit<T: Clone + Eq + Hash, U: Clone + Eq + Hash>(
         &self,
         train_set: &Dataset<T, U>,
@@ -318,16 +330,19 @@ pub struct Recommender<T, U> {
 }
 
 impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
+    /// Creates a recommender with explicit feedback.
     pub fn fit_explicit(train_set: &Dataset<T, U>) -> Recommender<T, U> {
         RecommenderBuilder::new().fit_explicit(train_set)
     }
 
+    /// Creates a recommender with implicit feedback.
     pub fn fit_implicit(train_set: &Dataset<T, U>) -> Recommender<T, U> {
         RecommenderBuilder::new().fit_implicit(train_set)
     }
 
     // fit_eval_explicit only defined on builder since not useful without callback
 
+    /// Returns the predicted rating for a specific user and item.
     pub fn predict(&self, user_id: &T, item_id: &U) -> f32 {
         let i = match self.user_map.get(user_id) {
             Some(o) => *o,
@@ -341,6 +356,7 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
         dot(self.user_factors.row(i), self.item_factors.row(j))
     }
 
+    /// Returns recommendations for a user.
     pub fn user_recs(&self, user_id: &T, count: usize) -> Vec<(&U, f32)> {
         let i = match self.user_map.get(user_id) {
             Some(o) => *o,
@@ -360,6 +376,7 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
             .collect()
     }
 
+    /// Returns recommendations for an item.
     pub fn item_recs(&self, item_id: &U, count: usize) -> Vec<(&U, f32)> {
         similar(
             &self.item_map,
@@ -369,6 +386,7 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
         )
     }
 
+    /// Returns similar users.
     pub fn similar_users(&self, user_id: &T, count: usize) -> Vec<(&T, f32)> {
         similar(
             &self.user_map,
@@ -392,30 +410,36 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
         &self.normalized_item_factors
     }
 
+    /// Returns user ids.
     pub fn user_ids(&self) -> &Vec<T> {
         self.user_map.ids()
     }
 
+    /// Returns item ids.
     pub fn item_ids(&self) -> &Vec<U> {
         self.item_map.ids()
     }
 
+    /// Returns factors for a specific user.
     pub fn user_factors(&self, user_id: &T) -> Option<&[f32]> {
         self.user_map
             .get(user_id)
             .map(|o| self.user_factors.row(*o))
     }
 
+    /// Returns factors for a specific item.
     pub fn item_factors(&self, item_id: &U) -> Option<&[f32]> {
         self.item_map
             .get(item_id)
             .map(|o| self.item_factors.row(*o))
     }
 
+    /// Returns the global mean.
     pub fn global_mean(&self) -> f32 {
         self.global_mean
     }
 
+    /// Calculates the root mean square error for a dataset.
     pub fn rmse(&self, data: &Dataset<T, U>) -> f32 {
         (data
             .iter()

@@ -11,16 +11,19 @@ pub struct Dataset<T, U> {
 }
 
 impl<T, U> Dataset<T, U> {
+    /// Creates a new dataset.
     pub fn new() -> Self {
         Self { data: Vec::new() }
     }
 
+    /// Creates a new dataset with a minimum capacity.
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             data: Vec::with_capacity(capacity),
         }
     }
 
+    /// Adds a rating to the dataset.
     pub fn push(&mut self, user_id: T, item_id: U, value: f32) {
         self.data.push(Rating {
             user_id,
@@ -33,10 +36,12 @@ impl<T, U> Dataset<T, U> {
         self.data.iter()
     }
 
+    /// Returns the number of ratings in the dataset.
     pub fn len(&self) -> usize {
         self.data.len()
     }
 
+    /// Returns whether the dataset is empty.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
