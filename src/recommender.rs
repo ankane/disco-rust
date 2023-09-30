@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct FitInfo {
     pub iteration: u32,
     pub train_loss: f32,
