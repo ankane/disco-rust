@@ -1,6 +1,4 @@
-//! Recommendations for Rust using collaborative filtering
-//!
-//! [View the docs](https://github.com/ankane/disco-rust)
+#![doc = include_str!("../README.md")]
 
 mod dataset;
 mod map;
