@@ -520,8 +520,8 @@ fn least_squares_cg(cui: &[Vec<(usize, f32)>], x: &mut Matrix, y: &Matrix, regul
 
 fn create_factors(rows: usize, cols: usize, prng: &mut Prng, end_range: f32) -> Matrix {
     let mut m = Matrix::new(rows, cols);
-    for i in 0..(rows * cols) {
-        m.data[i] = (prng.next() as f32) * end_range;
+    for v in m.data.iter_mut() {
+        *v = (prng.next() as f32) * end_range;
     }
     m
 }
