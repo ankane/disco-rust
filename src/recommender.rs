@@ -579,7 +579,7 @@ fn scaled_add(x: &mut [f32], a: f32, v: &[f32]) {
 
 fn neg(x: &mut [f32]) {
     for v in x {
-        *v *= -1.0
+        *v = -(*v);
     }
 }
 
