@@ -555,8 +555,7 @@ fn similar<'a, T: Clone + Eq + Hash>(
 fn normalize(factors: &Matrix) -> Matrix {
     let mut res = factors.clone();
 
-    for i in 0..res.rows {
-        let row = res.row_mut(i);
+    for row in res.data.chunks_exact_mut(res.cols) {
         let norm = row.iter().map(|v| v * v).sum::<f32>().sqrt();
         if norm > 0.0 {
             for v in row {

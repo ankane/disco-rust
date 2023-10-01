@@ -23,8 +23,8 @@ impl Matrix {
 
     pub fn dot(&self, x: &[f32]) -> Vec<f32> {
         let mut res = Vec::with_capacity(self.rows);
-        for i in 0..self.rows {
-            res.push(self.row(i).iter().zip(x).map(|(ri, xi)| ri * xi).sum());
+        for row in self.data.chunks_exact(self.cols) {
+            res.push(row.iter().zip(x).map(|(ri, xi)| ri * xi).sum());
         }
         res
     }
