@@ -584,10 +584,7 @@ fn neg(x: &mut [f32]) {
 }
 
 fn sample(prng: &mut Prng, n: usize) -> Vec<usize> {
-    let mut v = Vec::with_capacity(n);
-    for i in 0..n {
-        v.push(i);
-    }
+    let mut v: Vec<usize> = (0..n).collect();
     // Fisher–Yates shuffle
     for i in (1..=n - 1).rev() {
         let j = (prng.next() * (i as f64 + 1.0)) as usize;
