@@ -1,4 +1,4 @@
-## 0.2.0 (unreleased)
+## 0.2.0 (2023-10-01)
 
 - Removed dependencies
 - Changed `user_factors` and `item_factors` to return `Option<&[f32]>`

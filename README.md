@@ -6,6 +6,8 @@
 - Works with explicit and implicit feedback
 - Uses high-performance matrix factorization
 
+🎉 Zero dependencies
+
 [![Build Status](https://github.com/ankane/disco-rust/workflows/build/badge.svg?branch=master)](https://github.com/ankane/disco-rust/actions)
 
 ## Installation
