@@ -416,11 +416,13 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     }
 
     /// Returns user ids.
+    // TODO return slice in 0.3.0
     pub fn user_ids(&self) -> &Vec<T> {
         self.user_map.ids()
     }
 
     /// Returns item ids.
+    // TODO return slice in 0.3.0
     pub fn item_ids(&self) -> &Vec<U> {
         self.item_map.ids()
     }
