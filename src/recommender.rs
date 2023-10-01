@@ -479,7 +479,7 @@ fn least_squares_cg(cui: &[Vec<(usize, f32)>], x: &mut Matrix, y: &Matrix, regul
         // calculate residual r = (YtCuPu - (YtCuY.dot(Xu), without computing YtCuY
         let mut r = yty.dot(xi);
         neg(&mut r);
-        for (i, confidence) in row_vec.iter() {
+        for (i, confidence) in row_vec {
             scaled_add(
                 &mut r,
                 confidence - (confidence - 1.0) * dot(y.row(*i), xi),
@@ -493,7 +493,7 @@ fn least_squares_cg(cui: &[Vec<(usize, f32)>], x: &mut Matrix, y: &Matrix, regul
         for _ in 0..cg_steps {
             // calculate Ap = YtCuYp - without actually calculating YtCuY
             let mut ap = yty.dot(&p);
-            for (i, confidence) in row_vec.iter() {
+            for (i, confidence) in row_vec {
                 scaled_add(&mut ap, (confidence - 1.0) * dot(y.row(*i), &p), y.row(*i));
             }
 
