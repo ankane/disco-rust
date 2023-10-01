@@ -463,11 +463,9 @@ fn least_squares_cg(cui: &[Vec<(usize, f32)>], x: &mut Matrix, y: &Matrix, regul
     let mut yty = Matrix::new(factors, factors);
     for i in 0..factors {
         for j in 0..factors {
-            let mut sum = 0.0;
-            for k in 0..y.rows {
-                sum += y.data[k * factors + i] * y.data[k * factors + j];
-            }
-            yty.data[i * factors + j] = sum;
+            yty.data[i * factors + j] = (0..y.rows)
+                .map(|k| y.data[k * factors + i] * y.data[k * factors + j])
+                .sum();
         }
     }
     for i in 0..factors {
