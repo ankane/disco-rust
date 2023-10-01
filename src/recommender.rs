@@ -553,19 +553,15 @@ fn similar<'a, T: Clone + Eq + Hash>(
 }
 
 fn normalize(factors: &Matrix) -> Matrix {
-    let mut res = Matrix::new(factors.rows, factors.cols);
+    let mut res = factors.clone();
 
-    for i in 0..factors.rows {
-        let frow = factors.row(i);
-        let mut norm = frow.iter().map(|v| v * v).sum::<f32>().sqrt();
-
-        if norm <= 0.0 {
-            norm = 1e-10
-        }
-
+    for i in 0..res.rows {
         let row = res.row_mut(i);
-        for (ri, fi) in row.iter_mut().zip(frow) {
-            *ri = fi / norm;
+        let norm = row.iter().map(|v| v * v).sum::<f32>().sqrt();
+        if norm > 0.0 {
+            for v in row {
+                *v /= norm;
+            }
         }
     }
 
