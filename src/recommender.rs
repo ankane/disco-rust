@@ -510,8 +510,8 @@ fn least_squares_cg(cui: &[Vec<(usize, f32)>], x: &mut Matrix, y: &Matrix, regul
             }
 
             let rs = rsnew / rsold;
-            for i in 0..p.len() {
-                p[i] = r[i] + rs * p[i];
+            for (pi, ri) in p.iter_mut().zip(&r) {
+                *pi = ri + rs * (*pi);
             }
             rsold = rsnew;
         }
@@ -564,8 +564,8 @@ fn normalize(factors: &Matrix) -> Matrix {
         }
 
         let row = res.row_mut(i);
-        for j in 0..row.len() {
-            row[j] = frow[j] / norm;
+        for (ri, fi) in row.iter_mut().zip(frow) {
+            *ri = fi / norm;
         }
     }
 
