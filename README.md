@@ -1,6 +1,6 @@
 # Disco Rust
 
-:fire: Recommendations for Rust using collaborative filtering
+🔥 Recommendations for Rust using collaborative filtering
 
 - Supports user-based and item-based recommendations
 - Works with explicit and implicit feedback
