@@ -9,8 +9,11 @@ use std::hash::Hash;
 /// Information about a training iteration.
 #[derive(Clone, Debug)]
 pub struct FitInfo {
+    /// The iteration.
     pub iteration: u32,
+    /// The training loss.
     pub train_loss: f32,
+    /// The validation loss.
     pub valid_loss: f32,
 }
 
