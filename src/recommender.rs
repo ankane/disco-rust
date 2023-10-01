@@ -577,8 +577,8 @@ fn dot(a: &[f32], b: &[f32]) -> f32 {
 }
 
 fn scaled_add(x: &mut [f32], a: f32, v: &[f32]) {
-    for i in 0..x.len() {
-        x[i] += a * v[i]
+    for (xi, vi) in x.iter_mut().zip(v) {
+        *xi += a * vi;
     }
 }
 

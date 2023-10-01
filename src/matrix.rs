@@ -24,12 +24,7 @@ impl Matrix {
     pub fn dot(&self, x: &[f32]) -> Vec<f32> {
         let mut res = Vec::with_capacity(self.rows);
         for i in 0..self.rows {
-            let mut sum = 0.0;
-            let row = self.row(i);
-            for j in 0..self.cols {
-                sum += row[j] * x[j];
-            }
-            res.push(sum);
+            res.push(self.row(i).iter().zip(x).map(|(ri, xi)| ri * xi).sum());
         }
         res
     }
