@@ -2,7 +2,6 @@ use crate::map::Map;
 use crate::matrix::Matrix;
 use crate::prng::Prng;
 use crate::Dataset;
-use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
@@ -173,6 +172,8 @@ impl<'a> RecommenderBuilder<'a> {
 
         let user_factors = create_factors(users, factors, &mut prng, end_range);
         let item_factors = create_factors(items, factors, &mut prng, end_range);
+        let user_norms = Vec::with_capacity(users);
+        let item_norms = Vec::with_capacity(items);
 
         let mut recommender = Recommender {
             user_map,
@@ -181,8 +182,8 @@ impl<'a> RecommenderBuilder<'a> {
             global_mean,
             user_factors,
             item_factors,
-            normalized_user_factors: RefCell::new(None),
-            normalized_item_factors: RefCell::new(None),
+            user_norms,
+            item_norms,
         };
 
         if implicit {
@@ -309,6 +310,9 @@ impl<'a> RecommenderBuilder<'a> {
             }
         }
 
+        calculate_norms(&recommender.user_factors, &mut recommender.user_norms);
+        calculate_norms(&recommender.item_factors, &mut recommender.item_norms);
+
         recommender
     }
 }
@@ -327,11 +331,8 @@ pub struct Recommender<T, U> {
     global_mean: f32,
     user_factors: Matrix,
     item_factors: Matrix,
-
-    // use lazy initialization to save memory
-    // https://doc.rust-lang.org/std/cell/#implementation-details-of-logically-immutable-methods
-    normalized_user_factors: RefCell<Option<Matrix>>,
-    normalized_item_factors: RefCell<Option<Matrix>>,
+    user_norms: Vec<f32>,
+    item_norms: Vec<f32>,
 }
 
 impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
@@ -385,7 +386,8 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     pub fn item_recs(&self, item_id: &U, count: usize) -> Vec<(&U, f32)> {
         similar(
             &self.item_map,
-            self.normalized_item_factors(),
+            &self.item_factors,
+            &self.item_norms,
             item_id,
             count,
         )
@@ -395,24 +397,11 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     pub fn similar_users(&self, user_id: &T, count: usize) -> Vec<(&T, f32)> {
         similar(
             &self.user_map,
-            self.normalized_user_factors(),
+            &self.user_factors,
+            &self.user_norms,
             user_id,
             count,
         )
-    }
-
-    fn normalized_user_factors(&self) -> &RefCell<Option<Matrix>> {
-        self.normalized_user_factors
-            .borrow_mut()
-            .get_or_insert_with(|| normalize(&self.user_factors));
-        &self.normalized_user_factors
-    }
-
-    fn normalized_item_factors(&self) -> &RefCell<Option<Matrix>> {
-        self.normalized_item_factors
-            .borrow_mut()
-            .get_or_insert_with(|| normalize(&self.item_factors));
-        &self.normalized_item_factors
     }
 
     /// Returns user ids.
@@ -528,7 +517,8 @@ fn create_factors(rows: usize, cols: usize, prng: &mut Prng, end_range: f32) -> 
 
 fn similar<'a, T: Clone + Eq + Hash>(
     map: &'a Map<T>,
-    norm_factors: &RefCell<Option<Matrix>>,
+    factors: &Matrix,
+    norms: &[f32],
     id: &T,
     count: usize,
 ) -> Vec<(&'a T, f32)> {
@@ -537,10 +527,13 @@ fn similar<'a, T: Clone + Eq + Hash>(
         None => return Vec::new(),
     };
 
-    let borrowed = norm_factors.borrow();
-    let norm_factors = borrowed.as_ref().unwrap();
-
-    let predictions = norm_factors.dot(norm_factors.row(i));
+    let norm = norms[i];
+    let predictions: Vec<_> = factors
+        .dot(factors.row(i))
+        .iter()
+        .zip(norms)
+        .map(|(v, n)| v / (norm * n).max(f32::EPSILON))
+        .collect();
     let mut predictions: Vec<_> = predictions.iter().enumerate().collect();
     predictions.sort_by(|a, b| b.1.partial_cmp(a.1).unwrap());
     predictions.truncate(count + 1);
@@ -552,19 +545,11 @@ fn similar<'a, T: Clone + Eq + Hash>(
         .collect()
 }
 
-fn normalize(factors: &Matrix) -> Matrix {
-    let mut res = factors.clone();
-
-    for row in res.data.chunks_exact_mut(res.cols) {
+fn calculate_norms(factors: &Matrix, norms: &mut Vec<f32>) {
+    for row in factors.data.chunks_exact(factors.cols) {
         let norm = row.iter().map(|v| v * v).sum::<f32>().sqrt();
-        if norm > 0.0 {
-            for v in row {
-                *v /= norm;
-            }
-        }
+        norms.push(norm);
     }
-
-    res
 }
 
 fn dot(a: &[f32], b: &[f32]) -> f32 {

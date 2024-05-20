@@ -1,3 +1,7 @@
+## 0.2.1 (unreleased)
+
+- Reduced memory for `item_recs` and `similar_users`
+
 ## 0.2.0 (2023-10-01)
 
 - Removed dependencies
