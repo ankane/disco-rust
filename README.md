@@ -8,7 +8,7 @@
 
 🎉 Zero dependencies
 
-[![Build Status](https://github.com/ankane/disco-rust/workflows/build/badge.svg?branch=master)](https://github.com/ankane/disco-rust/actions)
+[![Build Status](https://github.com/ankane/disco-rust/actions/workflows/build.yml/badge.svg)](https://github.com/ankane/disco-rust/actions)
 
 ## Installation
 
