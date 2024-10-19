@@ -9,7 +9,8 @@ impl Prng {
         let seed = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap_or(Duration::ZERO)
-            .subsec_nanos() as u64;
+            .subsec_nanos()
+            .into();
         Self::from_seed(seed)
     }
 

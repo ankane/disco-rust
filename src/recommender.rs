@@ -136,11 +136,11 @@ impl<'a> RecommenderBuilder<'a> {
 
             if implicit {
                 if u == cui.len() {
-                    cui.push(Vec::new())
+                    cui.push(Vec::new());
                 }
 
                 if i == ciu.len() {
-                    ciu.push(Vec::new())
+                    ciu.push(Vec::new());
                 }
 
                 let confidence = 1.0 + self.alpha * rating.value;
@@ -522,7 +522,7 @@ fn least_squares_cg(cui: &[Vec<(usize, f32)>], x: &mut Matrix, y: &Matrix, regul
 
 fn create_factors(rows: usize, cols: usize, prng: &mut Prng, end_range: f32) -> Matrix {
     let mut m = Matrix::new(rows, cols);
-    for v in m.data.iter_mut() {
+    for v in &mut m.data {
         *v = (prng.next() as f32) * end_range;
     }
     m
@@ -588,7 +588,7 @@ fn neg(x: &mut [f32]) {
 fn sample(prng: &mut Prng, n: usize) -> Vec<usize> {
     let mut v: Vec<usize> = (0..n).collect();
     // Fisher–Yates shuffle
-    for i in (1..=n - 1).rev() {
+    for i in (1..n).rev() {
         let j = (prng.next() * (i as f64 + 1.0)) as usize;
         (v[i], v[j]) = (v[j], v[i]);
     }
