@@ -313,7 +313,7 @@ impl<'a> RecommenderBuilder<'a> {
     }
 }
 
-impl<'a> Default for RecommenderBuilder<'a> {
+impl Default for RecommenderBuilder<'_> {
     fn default() -> Self {
         Self::new()
     }
