@@ -61,7 +61,7 @@ Get item-based recommendations - “users who liked this item also liked”
 recommender.item_recs(&item_id, 5);
 ```
 
-Get predicted ratings for a specific user and item
+Get the predicted rating for a specific user and item
 
 ```rust
 recommender.predict(&user_id, &item_id);
