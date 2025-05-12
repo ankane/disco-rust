@@ -102,7 +102,7 @@ fn main() {
             train_set.push(user_id, item_id, rating);
         } else {
             valid_set.push(user_id, item_id, rating);
-        };
+        }
     }
 
     let recommender = RecommenderBuilder::new()
