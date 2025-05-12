@@ -77,43 +77,32 @@ recommender.similar_users(&user_id, 5);
 
 ### MovieLens
 
-Download the [MovieLens 100K dataset](https://grouplens.org/datasets/movielens/100k/).
-
-Add these lines to your application’s `Cargo.toml` under `[dependencies]`:
-
-```toml
-csv = "1"
-serde = { version = "1", features = ["derive"] }
-```
-
-And use:
+Download the [MovieLens 100K dataset](https://grouplens.org/datasets/movielens/100k/) and use:
 
 ```rust
-use csv::ReaderBuilder;
 use discorec::{Dataset, RecommenderBuilder};
-use serde::Deserialize;
 use std::fs::File;
-
-#[derive(Debug, Deserialize)]
-struct Row {
-    user_id: i32,
-    item_id: i32,
-    rating: f32,
-}
+use std::io::{BufRead, BufReader};
 
 fn main() {
     let mut train_set = Dataset::new();
     let mut valid_set = Dataset::new();
 
-    let file = File::open("u.data").unwrap();
-    let mut rdr = ReaderBuilder::new()
-        .has_headers(false)
-        .delimiter(b'\t')
-        .from_reader(file);
-    for (i, record) in rdr.records().enumerate() {
-        let row: Row = record.unwrap().deserialize(None).unwrap();
-        let dataset = if i < 80000 { &mut train_set } else { &mut valid_set };
-        dataset.push(row.user_id, row.item_id, row.rating);
+    let file = File::open("path/to/ml-100k/u.data").unwrap();
+    let rdr = BufReader::new(file);
+    for (i, line) in rdr.lines().enumerate() {
+        let line = line.unwrap();
+        let row: Vec<_> = line.split('\t').collect();
+        let dataset = if i < 80000 {
+            &mut train_set
+        } else {
+            &mut valid_set
+        };
+        dataset.push(
+            row[0].parse::<i32>().unwrap(),
+            row[1].parse::<i32>().unwrap(),
+            row[2].parse().unwrap(),
+        );
     }
 
     let recommender = RecommenderBuilder::new()
