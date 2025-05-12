@@ -93,16 +93,15 @@ fn main() {
     for (i, line) in rdr.lines().enumerate() {
         let line = line.unwrap();
         let row: Vec<_> = line.split('\t').collect();
+        let user_id: i32 = row[0].parse().unwrap();
+        let item_id: i32 = row[1].parse().unwrap();
+        let rating: f32 = row[2].parse().unwrap();
         let dataset = if i < 80000 {
             &mut train_set
         } else {
             &mut valid_set
         };
-        dataset.push(
-            row[0].parse::<i32>().unwrap(),
-            row[1].parse::<i32>().unwrap(),
-            row[2].parse().unwrap(),
-        );
+        dataset.push(user_id, item_id, rating);
     }
 
     let recommender = RecommenderBuilder::new()
