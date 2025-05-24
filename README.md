@@ -85,24 +85,21 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 fn main() {
-    let mut train_set = Dataset::new();
-    let mut valid_set = Dataset::new();
+    let mut train_set = Dataset::with_capacity(80000);
+    let mut valid_set = Dataset::with_capacity(20000);
 
     let file = File::open("path/to/ml-100k/u.data").unwrap();
     let rdr = BufReader::new(file);
     for (i, line) in rdr.lines().enumerate() {
         let line = line.unwrap();
-        let row: Vec<_> = line.split('\t').collect();
+        let mut row = line.split('\t');
 
-        let user_id: i32 = row[0].parse().unwrap();
-        let item_id: i32 = row[1].parse().unwrap();
-        let rating: f32 = row[2].parse().unwrap();
+        let user_id: i32 = row.next().unwrap().parse().unwrap();
+        let item_id: i32 = row.next().unwrap().parse().unwrap();
+        let rating: f32 = row.next().unwrap().parse().unwrap();
 
-        if i < 80000 {
-            train_set.push(user_id, item_id, rating);
-        } else {
-            valid_set.push(user_id, item_id, rating);
-        }
+        let dataset = if i < 80000 { &mut train_set } else { &mut valid_set };
+        dataset.push(user_id, item_id, rating);
     }
 
     let recommender = RecommenderBuilder::new()
