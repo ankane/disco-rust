@@ -35,7 +35,7 @@ impl<T, U> Dataset<T, U> {
         });
     }
 
-    pub(crate) fn iter(&self) -> Iter<Rating<T, U>> {
+    pub(crate) fn iter(&self) -> Iter<'_, Rating<T, U>> {
         self.data.iter()
     }
 
