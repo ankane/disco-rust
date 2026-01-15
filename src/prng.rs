@@ -50,13 +50,9 @@ fn xoshiro256plus(s: &mut [u64; 4]) -> u64 {
 
     s[2] ^= t;
 
-    s[3] = rotl(s[3], 45);
+    s[3] = s[3].rotate_left(45);
 
     result
-}
-
-fn rotl(x: u64, k: i32) -> u64 {
-    (x << k) | (x >> (64 - k))
 }
 
 // Ported from code written in 2015 by Sebastiano Vigna (vigna@acm.org)
