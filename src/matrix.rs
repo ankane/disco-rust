@@ -34,18 +34,18 @@ impl Matrix {
         use std::simd::num::SimdFloat;
         use std::simd::{Simd, StdFloat};
 
-        const LANE_COUNT: usize = 8;
+        const LANES: usize = 8;
 
-        let (x_chunks, x_remainder) = x.as_chunks::<LANE_COUNT>();
+        let (x_chunks, x_remainder) = x.as_chunks::<LANES>();
 
         self.data
             .chunks_exact(self.cols)
             .map(|row| {
-                let (row_chunks, row_remainder) = row.as_chunks::<LANE_COUNT>();
+                let (row_chunks, row_remainder) = row.as_chunks::<LANES>();
                 row_chunks
                     .iter()
                     .zip(x_chunks)
-                    .fold(Simd::<f32, LANE_COUNT>::splat(0.0), |sum, (ri, xi)| {
+                    .fold(Simd::<f32, LANES>::splat(0.0), |sum, (ri, xi)| {
                         Simd::from_slice(ri).mul_add(Simd::from_slice(xi), sum)
                     })
                     .reduce_sum()
