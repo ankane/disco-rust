@@ -11,5 +11,3 @@ readme = "README.md"
 
 [lib]
 doctest = false
-
-[dependencies]
