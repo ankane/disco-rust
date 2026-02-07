@@ -34,7 +34,7 @@ impl Matrix {
         use std::simd::num::SimdFloat;
         use std::simd::{Simd, StdFloat};
 
-        const LANES: usize = 8;
+        const LANES: usize = 4;
 
         let (x_chunks, x_remainder) = x.as_chunks::<LANES>();
 
