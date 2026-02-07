@@ -11,3 +11,9 @@ readme = "README.md"
 
 [lib]
 doctest = false
+
+[dependencies]
+
+[features]
+bench = []
+simd = []

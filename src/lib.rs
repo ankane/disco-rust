@@ -1,5 +1,10 @@
 #![doc = include_str!("../README.md")]
 #![allow(clippy::needless_doctest_main)]
+#![cfg_attr(feature = "bench", feature(test))]
+#![cfg_attr(feature = "simd", feature(portable_simd))]
+
+#[cfg(feature = "bench")]
+extern crate test;
 
 mod dataset;
 mod map;
