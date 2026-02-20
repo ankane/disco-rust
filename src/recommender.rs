@@ -346,16 +346,7 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
 
     /// Returns the predicted rating for a specific user and item.
     pub fn predict(&self, user_id: &T, item_id: &U) -> f32 {
-        let i = match self.user_map.get(user_id) {
-            Some(o) => *o,
-            None => return self.global_mean,
-        };
-        let j = match self.item_map.get(item_id) {
-            Some(o) => *o,
-            None => return self.global_mean,
-        };
-
-        dot(self.user_factors.row(i), self.item_factors.row(j))
+        self.inner_predict(self.user_map.get(user_id), self.item_map.get(item_id))
     }
 
     /// Returns recommendations for a user.
@@ -455,6 +446,13 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
             count += 1;
         }
         (sum / count as f32).sqrt()
+    }
+
+    fn inner_predict(&self, user_index: Option<&usize>, item_index: Option<&usize>) -> f32 {
+        match (user_index, item_index) {
+            (Some(i), Some(j)) => dot(self.user_factors.row(*i), self.item_factors.row(*j)),
+            _ => self.global_mean,
+        }
     }
 }
 
