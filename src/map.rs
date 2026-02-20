@@ -43,7 +43,7 @@ impl<T: Clone + Eq + Hash> Map<T> {
         self.vec.len()
     }
 
-    pub fn ids(&self) -> &Vec<T> {
+    pub fn ids(&self) -> &[T] {
         &self.vec
     }
 }
