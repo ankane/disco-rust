@@ -65,4 +65,11 @@ mod tests {
         let mut data = Dataset::with_capacity(1);
         data.push(1, "A", 1.0);
     }
+
+    #[test]
+    fn test_into_iter() {
+        let mut data = Dataset::with_capacity(1);
+        data.push(1, "A", 1.0);
+        assert_eq!(Some(&(1, "A", 1.0)), data.into_iter().next());
+    }
 }
