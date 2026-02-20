@@ -447,15 +447,14 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
 
     /// Calculates the root mean square error for a dataset.
     pub fn rmse(&self, data: &Dataset<T, U>) -> f32 {
-        (data
-            .iter()
-            .map(|(user_id, item_id, value)| {
-                let error = self.predict(user_id, item_id) - value;
-                error * error
-            })
-            .sum::<f32>()
-            / data.len() as f32)
-            .sqrt()
+        let mut sum = 0.0;
+        let mut count = 0;
+        for (user_id, item_id, value) in data.iter() {
+            let error = self.predict(user_id, item_id) - value;
+            sum += error * error;
+            count += 1;
+        }
+        (sum / count as f32).sqrt()
     }
 }
 
