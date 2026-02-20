@@ -452,7 +452,10 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     pub fn rmse(&self, data: &Dataset<T, U>) -> f32 {
         (data
             .iter()
-            .map(|(user_id, item_id, value)| (self.predict(user_id, item_id) - value).powf(2.0))
+            .map(|(user_id, item_id, value)| {
+                let error = self.predict(user_id, item_id) - value;
+                error * error
+            })
             .sum::<f32>()
             / data.len() as f32)
             .sqrt()
