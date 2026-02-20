@@ -1,7 +1,6 @@
 use crate::map::Map;
 use crate::matrix::Matrix;
 use crate::prng::Prng;
-use crate::Dataset;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
@@ -87,34 +86,50 @@ impl<'a> RecommenderBuilder<'a> {
     }
 
     /// Creates a recommender with explicit feedback.
-    pub fn fit_explicit<T: Clone + Eq + Hash, U: Clone + Eq + Hash>(
+    pub fn fit_explicit<
+        T: Clone + Eq + Hash + 'a,
+        U: Clone + Eq + Hash + 'a,
+        I: IntoIterator<Item = &'a (T, U, f32)>,
+    >(
         &self,
-        train_set: &Dataset<T, U>,
+        train_set: I,
     ) -> Recommender<T, U> {
         self.fit(train_set, None, false)
     }
 
     /// Creates a recommender with implicit feedback.
-    pub fn fit_implicit<T: Clone + Eq + Hash, U: Clone + Eq + Hash>(
+    pub fn fit_implicit<
+        T: Clone + Eq + Hash + 'a,
+        U: Clone + Eq + Hash + 'a,
+        I: IntoIterator<Item = &'a (T, U, f32)>,
+    >(
         &self,
-        train_set: &Dataset<T, U>,
+        train_set: I,
     ) -> Recommender<T, U> {
         self.fit(train_set, None, true)
     }
 
     /// Creates a recommender with explicit feedback and performs cross-validation.
-    pub fn fit_eval_explicit<T: Clone + Eq + Hash, U: Clone + Eq + Hash>(
+    pub fn fit_eval_explicit<
+        T: Clone + Eq + Hash + 'a,
+        U: Clone + Eq + Hash + 'a,
+        I: IntoIterator<Item = &'a (T, U, f32)>,
+    >(
         &self,
-        train_set: &Dataset<T, U>,
-        valid_set: &Dataset<T, U>,
+        train_set: I,
+        valid_set: I,
     ) -> Recommender<T, U> {
         self.fit(train_set, Some(valid_set), false)
     }
 
-    fn fit<T: Clone + Eq + Hash, U: Clone + Eq + Hash>(
+    fn fit<
+        T: Clone + Eq + Hash + 'a,
+        U: Clone + Eq + Hash + 'a,
+        I: IntoIterator<Item = &'a (T, U, f32)>,
+    >(
         &self,
-        train_set: &Dataset<T, U>,
-        valid_set: Option<&Dataset<T, U>>,
+        train_set: I,
+        valid_set: Option<I>,
         implicit: bool,
     ) -> Recommender<T, U> {
         let factors = self.factors as usize;
@@ -123,7 +138,7 @@ impl<'a> RecommenderBuilder<'a> {
         let mut item_map = Map::new();
         let mut rated = HashMap::new();
 
-        let mut train_inds = Vec::with_capacity(train_set.len());
+        let mut train_inds = Vec::new();
         let mut sum = 0.0;
 
         let mut cui = Vec::new();
@@ -345,12 +360,24 @@ pub struct Recommender<T, U> {
 
 impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     /// Creates a recommender with explicit feedback.
-    pub fn fit_explicit(train_set: &Dataset<T, U>) -> Recommender<T, U> {
+    pub fn fit_explicit<'a, I: IntoIterator<Item = &'a (T, U, f32)>>(
+        train_set: I,
+    ) -> Recommender<T, U>
+    where
+        T: 'a,
+        U: 'a,
+    {
         RecommenderBuilder::new().fit_explicit(train_set)
     }
 
     /// Creates a recommender with implicit feedback.
-    pub fn fit_implicit(train_set: &Dataset<T, U>) -> Recommender<T, U> {
+    pub fn fit_implicit<'a, I: IntoIterator<Item = &'a (T, U, f32)>>(
+        train_set: I,
+    ) -> Recommender<T, U>
+    where
+        T: 'a,
+        U: 'a,
+    {
         RecommenderBuilder::new().fit_implicit(train_set)
     }
 
@@ -449,7 +476,11 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     }
 
     /// Calculates the root mean square error for a dataset.
-    pub fn rmse(&self, data: &Dataset<T, U>) -> f32 {
+    pub fn rmse<'a, I: IntoIterator<Item = &'a (T, U, f32)>>(&self, data: I) -> f32
+    where
+        T: 'a,
+        U: 'a,
+    {
         let mut sum = 0.0;
         let mut count = 0;
         for (user_id, item_id, value) in data {
