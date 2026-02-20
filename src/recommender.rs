@@ -153,6 +153,18 @@ impl<'a> RecommenderBuilder<'a> {
             rated.entry(u).or_insert_with(HashSet::new).insert(i);
         }
 
+        let valid_inds = valid_set.map(|vs| {
+            vs.iter()
+                .map(|(user_id, item_id, value)| {
+                    (
+                        user_map.get(user_id).cloned(),
+                        item_map.get(item_id).cloned(),
+                        *value,
+                    )
+                })
+                .collect::<Vec<_>>()
+        });
+
         let users = user_map.len();
         let items = item_map.len();
 
@@ -291,8 +303,8 @@ impl<'a> RecommenderBuilder<'a> {
                 if let Some(callback) = &self.callback {
                     train_loss = (train_loss / train_inds.len() as f32).sqrt();
 
-                    let valid_loss = match &valid_set {
-                        Some(ds) => recommender.rmse(ds),
+                    let valid_loss = match &valid_inds {
+                        Some(ds) => recommender.inner_rmse(ds),
                         None => f32::NAN,
                     };
 
@@ -453,6 +465,18 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
             (Some(i), Some(j)) => dot(self.user_factors.row(*i), self.item_factors.row(*j)),
             _ => self.global_mean,
         }
+    }
+
+    // TODO DRY with rmse
+    fn inner_rmse(&self, data: &[(Option<usize>, Option<usize>, f32)]) -> f32 {
+        let mut sum = 0.0;
+        let mut count = 0;
+        for (user_index, item_index, value) in data.iter() {
+            let error = self.inner_predict(user_index.as_ref(), item_index.as_ref()) - value;
+            sum += error * error;
+            count += 1;
+        }
+        (sum / count as f32).sqrt()
     }
 }
 
