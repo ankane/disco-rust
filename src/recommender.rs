@@ -1,6 +1,7 @@
 use crate::map::Map;
 use crate::matrix::Matrix;
 use crate::prng::Prng;
+use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
@@ -479,14 +480,13 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
         T: 'a,
         U: 'a,
     {
-        let mut sum = 0.0;
-        let mut count = 0;
-        for (user_id, item_id, value) in data {
-            let error = self.predict(user_id, item_id) - value;
-            sum += error * error;
-            count += 1;
-        }
-        (sum / count as f32).sqrt()
+        self.inner_rmse(data.into_iter().map(|(user_id, item_id, value)| {
+            (
+                self.user_map.get(user_id).cloned(),
+                self.item_map.get(item_id).cloned(),
+                *value,
+            )
+        }))
     }
 
     fn inner_predict(&self, user_index: Option<&usize>, item_index: Option<&usize>) -> f32 {
@@ -496,14 +496,15 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
         }
     }
 
-    // TODO DRY with rmse
-    fn inner_rmse<'a, I: IntoIterator<Item = &'a (Option<usize>, Option<usize>, f32)>>(
-        &self,
-        data: I,
-    ) -> f32 {
+    fn inner_rmse<I>(&self, data: I) -> f32
+    where
+        I: IntoIterator,
+        I::Item: Borrow<(Option<usize>, Option<usize>, f32)>,
+    {
         let mut sum = 0.0;
         let mut count = 0;
-        for (user_index, item_index, value) in data {
+        for item in data {
+            let (user_index, item_index, value) = item.borrow();
             let error = self.inner_predict(user_index.as_ref(), item_index.as_ref()) - value;
             sum += error * error;
             count += 1;
