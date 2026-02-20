@@ -399,16 +399,12 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
         let predictions = self.item_factors.dot(self.user_factors.row(i));
         let mut predictions: Vec<_> = predictions.iter().enumerate().collect();
         predictions.sort_by(|a, b| b.1.partial_cmp(a.1).unwrap());
-        let mut recs = Vec::with_capacity(count);
-        for v in predictions {
-            if !self.rated.contains(&(i, v.0)) {
-                recs.push((self.item_map.lookup(v.0), *v.1));
-                if recs.len() == count {
-                    break;
-                }
-            }
-        }
-        recs
+        predictions
+            .iter()
+            .filter(|v| !self.rated.contains(&(i, v.0)))
+            .map(|v| (self.item_map.lookup(v.0), *v.1))
+            .take(count)
+            .collect()
     }
 
     /// Returns recommendations for an item.
