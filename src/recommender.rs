@@ -129,7 +129,7 @@ impl<'a> RecommenderBuilder<'a> {
         let mut cui = Vec::new();
         let mut ciu = Vec::new();
 
-        for (user_id, item_id, value) in train_set.iter() {
+        for (user_id, item_id, value) in train_set {
             let u = user_map.add(user_id.clone());
             let i = item_map.add(item_id.clone());
 
@@ -154,7 +154,7 @@ impl<'a> RecommenderBuilder<'a> {
         }
 
         let valid_inds = valid_set.map(|vs| {
-            vs.iter()
+            vs.into_iter()
                 .map(|(user_id, item_id, value)| {
                     (
                         user_map.get(user_id).cloned(),
@@ -452,7 +452,7 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     pub fn rmse(&self, data: &Dataset<T, U>) -> f32 {
         let mut sum = 0.0;
         let mut count = 0;
-        for (user_id, item_id, value) in data.iter() {
+        for (user_id, item_id, value) in data {
             let error = self.predict(user_id, item_id) - value;
             sum += error * error;
             count += 1;

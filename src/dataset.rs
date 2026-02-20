@@ -24,10 +24,6 @@ impl<T, U> Dataset<T, U> {
         self.data.push((user_id, item_id, value));
     }
 
-    pub(crate) fn iter(&self) -> Iter<'_, (T, U, f32)> {
-        self.data.iter()
-    }
-
     /// Returns the number of ratings in the dataset.
     pub fn len(&self) -> usize {
         self.data.len()
@@ -42,6 +38,15 @@ impl<T, U> Dataset<T, U> {
 impl<T, U> Default for Dataset<T, U> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl<'a, T: 'a, U: 'a> IntoIterator for &'a Dataset<T, U> {
+    type Item = &'a (T, U, f32);
+    type IntoIter = Iter<'a, (T, U, f32)>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.data.iter()
     }
 }
 
