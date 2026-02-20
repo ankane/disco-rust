@@ -3,7 +3,7 @@ use crate::matrix::Matrix;
 use crate::prng::Prng;
 use std::borrow::Borrow;
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::hash::Hash;
 
 /// Information about a training iteration.
@@ -137,7 +137,7 @@ impl<'a> RecommenderBuilder<'a> {
 
         let mut user_map = Map::new();
         let mut item_map = Map::new();
-        let mut rated = HashMap::new();
+        let mut rated = HashSet::new();
 
         let mut train_inds = Vec::new();
         let mut sum = 0.0;
@@ -166,7 +166,7 @@ impl<'a> RecommenderBuilder<'a> {
                 sum += *value;
             }
 
-            rated.entry(u).or_insert_with(HashSet::new).insert(i);
+            rated.insert((u, i));
         }
 
         let valid_inds = valid_set.map(|vs| {
@@ -348,7 +348,7 @@ impl Default for RecommenderBuilder<'_> {
 pub struct Recommender<T, U> {
     user_map: Map<T>,
     item_map: Map<U>,
-    rated: HashMap<usize, HashSet<usize>>,
+    rated: HashSet<(usize, usize)>,
     global_mean: f32,
     user_factors: Matrix,
     item_factors: Matrix,
@@ -396,17 +396,19 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
             None => return Vec::new(),
         };
 
-        let rated = self.rated.get(&i).unwrap();
         let predictions = self.item_factors.dot(self.user_factors.row(i));
         let mut predictions: Vec<_> = predictions.iter().enumerate().collect();
         predictions.sort_by(|a, b| b.1.partial_cmp(a.1).unwrap());
-        predictions.truncate(count + rated.len());
-        predictions.retain(|v| !rated.contains(&v.0));
-        predictions.truncate(count);
-        predictions
-            .iter()
-            .map(|v| (self.item_map.lookup(v.0), *v.1))
-            .collect()
+        let mut recs = Vec::with_capacity(count);
+        for v in predictions {
+            if !self.rated.contains(&(i, v.0)) {
+                recs.push((self.item_map.lookup(v.0), *v.1));
+                if recs.len() == count {
+                    break;
+                }
+            }
+        }
+        recs
     }
 
     /// Returns recommendations for an item.
