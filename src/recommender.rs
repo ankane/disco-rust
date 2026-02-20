@@ -497,10 +497,13 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     }
 
     // TODO DRY with rmse
-    fn inner_rmse(&self, data: &[(Option<usize>, Option<usize>, f32)]) -> f32 {
+    fn inner_rmse<'a, I: IntoIterator<Item = &'a (Option<usize>, Option<usize>, f32)>>(
+        &self,
+        data: I,
+    ) -> f32 {
         let mut sum = 0.0;
         let mut count = 0;
-        for (user_index, item_index, value) in data.iter() {
+        for (user_index, item_index, value) in data {
             let error = self.inner_predict(user_index.as_ref(), item_index.as_ref()) - value;
             sum += error * error;
             count += 1;
