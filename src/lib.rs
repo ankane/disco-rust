@@ -132,14 +132,10 @@ mod tests {
     }
 
     #[test]
-    fn test_vec() {
+    fn test_data() {
         let data = vec![(1, "A", 1.0)];
         Recommender::fit_implicit(&data);
-    }
-
-    #[test]
-    fn test_slice() {
-        let data = &[(1, "A", 1.0)];
-        Recommender::fit_implicit(data);
+        Recommender::fit_implicit(data.as_slice());
+        Recommender::fit_implicit(data.iter().map(|v| v));
     }
 }
