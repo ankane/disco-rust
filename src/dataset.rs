@@ -1,16 +1,9 @@
 use std::slice::Iter;
 
-#[derive(Clone, Debug)]
-pub(crate) struct Rating<T, U> {
-    pub user_id: T,
-    pub item_id: U,
-    pub value: f32,
-}
-
 /// A dataset.
 #[derive(Clone, Debug)]
 pub struct Dataset<T, U> {
-    data: Vec<Rating<T, U>>,
+    data: Vec<(T, U, f32)>,
 }
 
 impl<T, U> Dataset<T, U> {
@@ -28,14 +21,10 @@ impl<T, U> Dataset<T, U> {
 
     /// Adds a rating to the dataset.
     pub fn push(&mut self, user_id: T, item_id: U, value: f32) {
-        self.data.push(Rating {
-            user_id,
-            item_id,
-            value,
-        });
+        self.data.push((user_id, item_id, value));
     }
 
-    pub(crate) fn iter(&self) -> Iter<'_, Rating<T, U>> {
+    pub(crate) fn iter(&self) -> Iter<'_, (T, U, f32)> {
         self.data.iter()
     }
 

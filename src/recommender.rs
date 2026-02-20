@@ -130,9 +130,9 @@ impl<'a> RecommenderBuilder<'a> {
         let mut cui = Vec::new();
         let mut ciu = Vec::new();
 
-        for rating in train_set.iter() {
-            let u = user_map.add(rating.user_id.clone());
-            let i = item_map.add(rating.item_id.clone());
+        for (user_id, item_id, value) in train_set.iter() {
+            let u = user_map.add(user_id.clone());
+            let i = item_map.add(item_id.clone());
 
             if implicit {
                 if u == cui.len() {
@@ -143,13 +143,13 @@ impl<'a> RecommenderBuilder<'a> {
                     ciu.push(Vec::new());
                 }
 
-                let confidence = 1.0 + self.alpha * rating.value;
+                let confidence = 1.0 + self.alpha * value;
                 cui[u].push((i, confidence));
                 ciu[i].push((u, confidence));
             } else {
                 row_inds.push(u);
                 col_inds.push(i);
-                values.push(rating.value);
+                values.push(*value);
             }
 
             rated.entry(u).or_insert_with(HashSet::new).insert(i);
@@ -452,7 +452,7 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     pub fn rmse(&self, data: &Dataset<T, U>) -> f32 {
         (data
             .iter()
-            .map(|r| (self.predict(&r.user_id, &r.item_id) - r.value).powf(2.0))
+            .map(|(user_id, item_id, value)| (self.predict(user_id, item_id) - value).powf(2.0))
             .sum::<f32>()
             / data.len() as f32)
             .sqrt()
