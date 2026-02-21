@@ -1,10 +1,11 @@
-use crate::map::Map;
-use crate::matrix::Matrix;
-use crate::prng::Prng;
 use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::hash::Hash;
+
+use crate::map::Map;
+use crate::matrix::Matrix;
+use crate::prng::Prng;
 
 /// Information about a training iteration.
 #[derive(Clone, Debug)]
