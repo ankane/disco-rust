@@ -402,8 +402,8 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
         predictions
             .iter()
             .filter(|v| !self.rated.contains(&(i, v.0)))
-            .take(count)
             .map(|v| (self.item_map.lookup(v.0), *v.1))
+            .take(count)
             .collect()
     }
 
@@ -607,8 +607,8 @@ fn similar<'a, T: Clone + Eq + Hash>(
     predictions
         .iter()
         .filter(|v| v.0 != i)
-        .take(count)
         .map(|v| (map.lookup(v.0), *v.1))
+        .take(count)
         .collect()
 }
 
