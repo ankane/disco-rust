@@ -2,6 +2,7 @@ use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
+use std::iter::Empty;
 
 use crate::map::Map;
 use crate::matrix::Matrix;
@@ -95,7 +96,7 @@ impl<'a> RecommenderBuilder<'a> {
         I: IntoIterator,
         I::Item: Borrow<(T, U, f32)>,
     {
-        self.fit(train_set, None, false)
+        self.fit(train_set, None::<Empty<(T, U, f32)>>, false)
     }
 
     /// Creates a recommender with implicit feedback.
@@ -106,26 +107,35 @@ impl<'a> RecommenderBuilder<'a> {
         I: IntoIterator,
         I::Item: Borrow<(T, U, f32)>,
     {
-        self.fit(train_set, None, true)
+        self.fit(train_set, None::<Empty<(T, U, f32)>>, true)
     }
 
     /// Creates a recommender with explicit feedback and performs cross-validation.
-    pub fn fit_eval_explicit<T, U, I>(&self, train_set: I, valid_set: I) -> Recommender<T, U>
+    pub fn fit_eval_explicit<T, U, I, J>(&self, train_set: I, valid_set: J) -> Recommender<T, U>
     where
         T: Clone + Eq + Hash,
         U: Clone + Eq + Hash,
         I: IntoIterator,
         I::Item: Borrow<(T, U, f32)>,
+        J: IntoIterator,
+        J::Item: Borrow<(T, U, f32)>,
     {
         self.fit(train_set, Some(valid_set), false)
     }
 
-    fn fit<T, U, I>(&self, train_set: I, valid_set: Option<I>, implicit: bool) -> Recommender<T, U>
+    fn fit<T, U, I, J>(
+        &self,
+        train_set: I,
+        valid_set: Option<J>,
+        implicit: bool,
+    ) -> Recommender<T, U>
     where
         T: Clone + Eq + Hash,
         U: Clone + Eq + Hash,
         I: IntoIterator,
         I::Item: Borrow<(T, U, f32)>,
+        J: IntoIterator,
+        J::Item: Borrow<(T, U, f32)>,
     {
         let train_set = train_set.into_iter();
 

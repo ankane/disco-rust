@@ -125,5 +125,6 @@ mod tests {
         Recommender::fit_implicit(data.as_slice());
         Recommender::fit_implicit(data.iter().map(|v| v));
         Recommender::fit_implicit(data);
+        RecommenderBuilder::new().fit_eval_explicit([(1, "A", 1.0)], &[(1, "A", 1.0)]);
     }
 }
