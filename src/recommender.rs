@@ -139,7 +139,12 @@ impl<'a> RecommenderBuilder<'a> {
             let (user_id, item_id, value) = item.borrow();
             let u = user_map.add(user_id.clone());
             let i = item_map.add(item_id.clone());
-            train_inds.push((u, i, *value));
+            let r = if implicit {
+                1.0 + self.alpha * (*value)
+            } else {
+                *value
+            };
+            train_inds.push((u, i, r));
             rated.insert((u, i));
             sum += *value;
         }
@@ -179,10 +184,6 @@ impl<'a> RecommenderBuilder<'a> {
         if implicit {
             // conjugate gradient method
             // https://www.benfrederickson.com/fast-implicit-matrix-factorization/
-
-            for (_, _, value) in train_inds.iter_mut() {
-                *value = 1.0 + self.alpha * (*value);
-            }
 
             let mut cui = train_inds;
             let mut ciu = cui.iter().map(|v| (v.1, v.0, v.2)).collect::<Vec<_>>();
