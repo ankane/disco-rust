@@ -451,10 +451,8 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     }
 
     /// Calculates the root mean square error for a dataset.
-    pub fn rmse<'a, I>(&self, data: I) -> f32
+    pub fn rmse<I>(&self, data: I) -> f32
     where
-        T: 'a,
-        U: 'a,
         I: IntoIterator,
         I::Item: Borrow<(T, U, f32)>,
     {
