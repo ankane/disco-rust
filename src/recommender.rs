@@ -90,9 +90,10 @@ impl<'a> RecommenderBuilder<'a> {
     /// Creates a recommender with explicit feedback.
     pub fn fit_explicit<T, U, I>(&self, train_set: I) -> Recommender<T, U>
     where
-        T: Clone + Eq + Hash + 'a,
-        U: Clone + Eq + Hash + 'a,
-        I: IntoIterator<Item = &'a (T, U, f32)>,
+        T: Clone + Eq + Hash,
+        U: Clone + Eq + Hash,
+        I: IntoIterator,
+        I::Item: Borrow<(T, U, f32)>,
     {
         self.fit(train_set, None, false)
     }
@@ -100,9 +101,10 @@ impl<'a> RecommenderBuilder<'a> {
     /// Creates a recommender with implicit feedback.
     pub fn fit_implicit<T, U, I>(&self, train_set: I) -> Recommender<T, U>
     where
-        T: Clone + Eq + Hash + 'a,
-        U: Clone + Eq + Hash + 'a,
-        I: IntoIterator<Item = &'a (T, U, f32)>,
+        T: Clone + Eq + Hash,
+        U: Clone + Eq + Hash,
+        I: IntoIterator,
+        I::Item: Borrow<(T, U, f32)>,
     {
         self.fit(train_set, None, true)
     }
@@ -110,18 +112,20 @@ impl<'a> RecommenderBuilder<'a> {
     /// Creates a recommender with explicit feedback and performs cross-validation.
     pub fn fit_eval_explicit<T, U, I>(&self, train_set: I, valid_set: I) -> Recommender<T, U>
     where
-        T: Clone + Eq + Hash + 'a,
-        U: Clone + Eq + Hash + 'a,
-        I: IntoIterator<Item = &'a (T, U, f32)>,
+        T: Clone + Eq + Hash,
+        U: Clone + Eq + Hash,
+        I: IntoIterator,
+        I::Item: Borrow<(T, U, f32)>,
     {
         self.fit(train_set, Some(valid_set), false)
     }
 
     fn fit<T, U, I>(&self, train_set: I, valid_set: Option<I>, implicit: bool) -> Recommender<T, U>
     where
-        T: Clone + Eq + Hash + 'a,
-        U: Clone + Eq + Hash + 'a,
-        I: IntoIterator<Item = &'a (T, U, f32)>,
+        T: Clone + Eq + Hash,
+        U: Clone + Eq + Hash,
+        I: IntoIterator,
+        I::Item: Borrow<(T, U, f32)>,
     {
         let train_set = train_set.into_iter();
 
@@ -130,7 +134,8 @@ impl<'a> RecommenderBuilder<'a> {
         let mut train_inds = Vec::with_capacity(train_set.size_hint().0);
         let mut rated = HashSet::new();
 
-        for (user_id, item_id, value) in train_set {
+        for item in train_set {
+            let (user_id, item_id, value) = item.borrow();
             let u = user_map.add(user_id.clone());
             let i = item_map.add(item_id.clone());
             train_inds.push((u, i, *value));
@@ -139,7 +144,8 @@ impl<'a> RecommenderBuilder<'a> {
 
         let valid_inds = valid_set.map(|vs| {
             vs.into_iter()
-                .map(|(user_id, item_id, value)| {
+                .map(|item| {
+                    let (user_id, item_id, value) = item.borrow();
                     (
                         user_map.get(user_id).cloned(),
                         item_map.get(item_id).cloned(),
@@ -337,21 +343,19 @@ pub struct Recommender<T, U> {
 
 impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     /// Creates a recommender with explicit feedback.
-    pub fn fit_explicit<'a, I>(train_set: I) -> Recommender<T, U>
+    pub fn fit_explicit<I>(train_set: I) -> Recommender<T, U>
     where
-        T: 'a,
-        U: 'a,
-        I: IntoIterator<Item = &'a (T, U, f32)>,
+        I: IntoIterator,
+        I::Item: Borrow<(T, U, f32)>,
     {
         RecommenderBuilder::new().fit_explicit(train_set)
     }
 
     /// Creates a recommender with implicit feedback.
-    pub fn fit_implicit<'a, I>(train_set: I) -> Recommender<T, U>
+    pub fn fit_implicit<I>(train_set: I) -> Recommender<T, U>
     where
-        T: 'a,
-        U: 'a,
-        I: IntoIterator<Item = &'a (T, U, f32)>,
+        I: IntoIterator,
+        I::Item: Borrow<(T, U, f32)>,
     {
         RecommenderBuilder::new().fit_implicit(train_set)
     }
@@ -447,12 +451,15 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     }
 
     /// Calculates the root mean square error for a dataset.
-    pub fn rmse<'a, I: IntoIterator<Item = &'a (T, U, f32)>>(&self, data: I) -> f32
+    pub fn rmse<'a, I>(&self, data: I) -> f32
     where
         T: 'a,
         U: 'a,
+        I: IntoIterator,
+        I::Item: Borrow<(T, U, f32)>,
     {
-        self.inner_rmse(data.into_iter().map(|(user_id, item_id, value)| {
+        self.inner_rmse(data.into_iter().map(|item| {
+            let (user_id, item_id, value) = item.borrow();
             (
                 self.user_map.get(user_id).cloned(),
                 self.item_map.get(item_id).cloned(),
