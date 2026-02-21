@@ -1,6 +1,12 @@
+#![allow(deprecated)]
+
 use std::slice::Iter;
 
 /// A dataset.
+#[deprecated(
+    since = "0.3.0",
+    note = "Use `Vec<(T, U, f32)>` or an iterator instead."
+)]
 #[derive(Clone, Debug)]
 pub struct Dataset<T, U> {
     data: Vec<(T, U, f32)>,

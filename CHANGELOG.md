@@ -2,6 +2,7 @@
 
 - Added support for iterators
 - Changed `user_ids` and `item_ids` to return slice
+- Deprecated `Dataset` class
 
 ## 0.2.1 (2024-06-02)
 

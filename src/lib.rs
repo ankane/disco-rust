@@ -7,24 +7,27 @@ mod matrix;
 mod prng;
 mod recommender;
 
-pub use dataset::Dataset;
 pub use recommender::{FitInfo, Recommender, RecommenderBuilder};
+
+#[allow(deprecated)]
+pub use dataset::Dataset;
 
 #[cfg(test)]
 mod tests {
-    use crate::{Dataset, Recommender, RecommenderBuilder};
+    use crate::{Recommender, RecommenderBuilder};
 
     #[test]
     fn test_rated() {
-        let mut data = Dataset::new();
-        data.push(1, "A", 1.0);
-        data.push(1, "B", 1.0);
-        data.push(1, "C", 1.0);
-        data.push(1, "D", 1.0);
-        data.push(2, "C", 1.0);
-        data.push(2, "D", 1.0);
-        data.push(2, "E", 1.0);
-        data.push(2, "F", 1.0);
+        let data = [
+            (1, "A", 1.0),
+            (1, "B", 1.0),
+            (1, "C", 1.0),
+            (1, "D", 1.0),
+            (2, "C", 1.0),
+            (2, "D", 1.0),
+            (2, "E", 1.0),
+            (2, "F", 1.0),
+        ];
 
         let recommender = Recommender::fit_implicit(&data);
 
@@ -47,10 +50,7 @@ mod tests {
 
     #[test]
     fn test_item_recs_same_score() {
-        let mut data = Dataset::new();
-        data.push(1, "A", 1.0);
-        data.push(1, "B", 1.0);
-        data.push(2, "C", 1.0);
+        let data = [(1, "A", 1.0), (1, "B", 1.0), (2, "C", 1.0)];
 
         let recommender = Recommender::fit_implicit(&data);
         let item_ids = recommender
@@ -63,10 +63,7 @@ mod tests {
 
     #[test]
     fn test_ids() {
-        let mut data = Dataset::new();
-        data.push(1, "A", 1.0);
-        data.push(1, "B", 1.0);
-        data.push(2, "B", 1.0);
+        let data = [(1, "A", 1.0), (1, "B", 1.0), (2, "B", 1.0)];
 
         let recommender = Recommender::fit_implicit(&data);
         assert_eq!(recommender.user_ids(), &vec![1, 2]);
@@ -75,10 +72,7 @@ mod tests {
 
     #[test]
     fn test_factors() {
-        let mut data = Dataset::new();
-        data.push(1, "A", 1.0);
-        data.push(1, "B", 1.0);
-        data.push(2, "B", 1.0);
+        let data = [(1, "A", 1.0), (1, "B", 1.0), (2, "B", 1.0)];
 
         let recommender = RecommenderBuilder::new().factors(20).fit_implicit(&data);
 
@@ -91,36 +85,29 @@ mod tests {
 
     #[test]
     fn test_callback_explicit() {
-        let mut data = Dataset::new();
-        data.push(1, "A", 1.0);
-
         RecommenderBuilder::new()
             .callback(|info| {
                 assert!((1..=20).contains(&info.iteration));
                 assert!(!info.train_loss.is_nan());
                 assert!(info.valid_loss.is_nan());
             })
-            .fit_explicit(&data);
+            .fit_explicit(&[(1, "A", 1.0)]);
     }
 
     #[test]
     fn test_callback_implicit() {
-        let mut data = Dataset::new();
-        data.push(1, "A", 1.0);
-
         RecommenderBuilder::new()
             .callback(|info| {
                 assert!((1..=20).contains(&info.iteration));
                 assert!(info.train_loss.is_nan());
                 assert!(info.valid_loss.is_nan());
             })
-            .fit_implicit(&data);
+            .fit_implicit(&[(1, "A", 1.0)]);
     }
 
     #[test]
     fn test_callback_explicit_eval() {
-        let mut data = Dataset::new();
-        data.push(1, "A", 1.0);
+        let data = [(1, "A", 1.0)];
 
         RecommenderBuilder::new()
             .callback(|info| {
