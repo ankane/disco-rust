@@ -178,7 +178,7 @@ impl<'a> RecommenderBuilder<'a> {
         let global_mean = if implicit {
             0.0
         } else {
-            sum / values.len() as f32
+            sum / row_inds.len() as f32
         };
 
         let users = user_map.len();
@@ -255,10 +255,11 @@ impl<'a> RecommenderBuilder<'a> {
                 for j in sample(&mut prng, row_inds.len()) {
                     let u = row_inds[j];
                     let v = col_inds[j];
+                    let r = values[j];
 
                     let pu = recommender.user_factors.row_mut(u);
                     let qv = recommender.item_factors.row_mut(v);
-                    let e = values[j] - dot(pu, qv);
+                    let e = r - dot(pu, qv);
 
                     // slow learner
                     let mut g_hat = 0.0;
