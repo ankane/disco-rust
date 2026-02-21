@@ -177,6 +177,9 @@ impl<'a> RecommenderBuilder<'a> {
         };
 
         if implicit {
+            // conjugate gradient method
+            // https://www.benfrederickson.com/fast-implicit-matrix-factorization/
+
             for (_, _, value) in train_inds.iter_mut() {
                 *value = 1.0 + self.alpha * (*value);
             }
@@ -185,9 +188,6 @@ impl<'a> RecommenderBuilder<'a> {
             let mut ciu = cui.iter().map(|v| (v.1, v.0, v.2)).collect::<Vec<_>>();
             cui.sort_by_key(|v| v.0);
             ciu.sort_by_key(|v| v.0);
-
-            // conjugate gradient method
-            // https://www.benfrederickson.com/fast-implicit-matrix-factorization/
 
             let regularization = self.regularization.unwrap_or(0.01);
 
