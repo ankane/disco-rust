@@ -335,12 +335,12 @@ impl<'a> RecommenderBuilder<'a> {
 
                     let valid_loss = match &valid_inds {
                         Some(ds) => rmse(ds.iter().map(|(u, i, v, valid)| {
-                            let prediction = if *valid {
-                                recommender.inner_predict(Some(u), Some(i))
+                            let (user_index, item_index) = if *valid {
+                                (Some(u), Some(i))
                             } else {
-                                recommender.global_mean
+                                (None, None)
                             };
-                            (*v, prediction)
+                            (*v, recommender.inner_predict(user_index, item_index))
                         })),
                         None => f32::NAN,
                     };
