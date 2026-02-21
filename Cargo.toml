@@ -6,7 +6,7 @@ repository = "https://github.com/ankane/disco-rust"
 license = "MIT"
 authors = ["Andrew Kane <andrew@ankane.org>"]
 edition = "2021"
-rust-version = "1.56.0"
+rust-version = "1.77.0"
 readme = "README.md"
 
 [lib]
