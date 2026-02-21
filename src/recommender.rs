@@ -449,13 +449,6 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
         self.inner_rmse(map_valid_set(data, &self.user_map, &self.item_map))
     }
 
-    fn inner_predict(&self, user_index: Option<&usize>, item_index: Option<&usize>) -> f32 {
-        match (user_index, item_index) {
-            (Some(i), Some(j)) => dot(self.user_factors.row(*i), self.item_factors.row(*j)),
-            _ => self.global_mean,
-        }
-    }
-
     fn inner_rmse<I>(&self, data: I) -> f32
     where
         I: IntoIterator,
@@ -470,6 +463,13 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
             count += 1;
         }
         (sum / count as f32).sqrt()
+    }
+
+    fn inner_predict(&self, user_index: Option<&usize>, item_index: Option<&usize>) -> f32 {
+        match (user_index, item_index) {
+            (Some(i), Some(j)) => dot(self.user_factors.row(*i), self.item_factors.row(*j)),
+            _ => self.global_mean,
+        }
     }
 }
 
