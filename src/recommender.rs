@@ -133,6 +133,7 @@ impl<'a> RecommenderBuilder<'a> {
         let mut item_map = Map::new();
         let mut train_inds = Vec::with_capacity(train_set.size_hint().0);
         let mut rated = HashSet::with_capacity(train_set.size_hint().0);
+        let mut sum = 0.0;
 
         for item in train_set {
             let (user_id, item_id, value) = item.borrow();
@@ -140,6 +141,7 @@ impl<'a> RecommenderBuilder<'a> {
             let i = item_map.add(item_id.clone());
             train_inds.push((u, i, *value));
             rated.insert((u, i));
+            sum += *value;
         }
 
         let valid_inds =
@@ -148,7 +150,7 @@ impl<'a> RecommenderBuilder<'a> {
         let global_mean = if implicit {
             0.0
         } else {
-            train_inds.iter().map(|v| v.2).sum::<f32>() / train_inds.len() as f32
+            sum / train_inds.len() as f32
         };
 
         let users = user_map.len();
