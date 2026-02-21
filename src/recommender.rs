@@ -160,23 +160,21 @@ impl<'a> RecommenderBuilder<'a> {
                 .collect::<Vec<_>>()
         });
 
-        let users = user_map.len();
-        let items = item_map.len();
-
         let global_mean = if implicit {
             0.0
         } else {
             train_inds.iter().map(|v| v.2).sum::<f32>() / train_inds.len() as f32
         };
 
-        let end_range = if implicit { 0.01 } else { 0.1 };
-
+        let users = user_map.len();
+        let items = item_map.len();
+        let factors = self.factors as usize;
         let mut prng = match self.seed {
             Some(s) => Prng::from_seed(s),
             None => Prng::new(),
         };
+        let end_range = if implicit { 0.01 } else { 0.1 };
 
-        let factors = self.factors as usize;
         let user_factors = create_factors(users, factors, &mut prng, end_range);
         let item_factors = create_factors(items, factors, &mut prng, end_range);
 
