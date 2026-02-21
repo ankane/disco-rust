@@ -186,11 +186,10 @@ impl<'a> RecommenderBuilder<'a> {
             vs.into_iter()
                 .map(|item| {
                     let (user_id, item_id, value) = item.borrow();
-                    (
-                        user_map.get(user_id).copied(),
-                        item_map.get(item_id).copied(),
-                        *value,
-                    )
+                    match (user_map.get(user_id), item_map.get(item_id)) {
+                        (Some(i), Some(j)) => (*i, *j, *value, true),
+                        _ => (0, 0, *value, false),
+                    }
                 })
                 .collect::<Vec<_>>()
         });
@@ -335,8 +334,13 @@ impl<'a> RecommenderBuilder<'a> {
                     train_loss = (train_loss / row_inds.len() as f32).sqrt();
 
                     let valid_loss = match &valid_inds {
-                        Some(ds) => rmse(ds.iter().map(|(u, i, v)| {
-                            (*v, recommender.inner_predict(u.as_ref(), i.as_ref()))
+                        Some(ds) => rmse(ds.iter().map(|(u, i, v, valid)| {
+                            let prediction = if *valid {
+                                recommender.inner_predict(Some(u), Some(i))
+                            } else {
+                                recommender.global_mean
+                            };
+                            (*v, prediction)
                         })),
                         None => f32::NAN,
                     };
