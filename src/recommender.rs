@@ -172,8 +172,18 @@ impl<'a> RecommenderBuilder<'a> {
             }
         }
 
-        let valid_inds =
-            valid_set.map(|vs| map_valid_set(vs, &user_map, &item_map).collect::<Vec<_>>());
+        let valid_inds = valid_set.map(|vs| {
+            vs.into_iter()
+                .map(|item| {
+                    let (user_id, item_id, value) = item.borrow();
+                    (
+                        user_map.get(user_id).copied(),
+                        item_map.get(item_id).copied(),
+                        *value,
+                    )
+                })
+                .collect::<Vec<_>>()
+        });
 
         let global_mean = if implicit {
             0.0
@@ -315,7 +325,9 @@ impl<'a> RecommenderBuilder<'a> {
                     train_loss = (train_loss / row_inds.len() as f32).sqrt();
 
                     let valid_loss = match &valid_inds {
-                        Some(ds) => recommender.inner_rmse(ds),
+                        Some(ds) => rmse(ds.iter().map(|(u, i, v)| {
+                            (*v, recommender.inner_predict(u.as_ref(), i.as_ref()))
+                        })),
                         None => f32::NAN,
                     };
 
@@ -470,23 +482,10 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
         I: IntoIterator,
         I::Item: Borrow<(T, U, f32)>,
     {
-        self.inner_rmse(map_valid_set(data, &self.user_map, &self.item_map))
-    }
-
-    fn inner_rmse<I>(&self, data: I) -> f32
-    where
-        I: IntoIterator,
-        I::Item: Borrow<(Option<usize>, Option<usize>, f32)>,
-    {
-        let mut sum = 0.0;
-        let mut count = 0;
-        for item in data {
-            let (user_index, item_index, value) = item.borrow();
-            let error = self.inner_predict(user_index.as_ref(), item_index.as_ref()) - value;
-            sum += error * error;
-            count += 1;
-        }
-        (sum / count as f32).sqrt()
+        rmse(data.into_iter().map(|item| {
+            let (user_id, item_id, value) = item.borrow();
+            (*value, self.predict(user_id, item_id))
+        }))
     }
 
     fn inner_predict(&self, user_index: Option<&usize>, item_index: Option<&usize>) -> f32 {
@@ -497,25 +496,18 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     }
 }
 
-fn map_valid_set<'a, T, U, I>(
-    data: I,
-    user_map: &'a Map<T>,
-    item_map: &'a Map<U>,
-) -> impl Iterator<Item = (Option<usize>, Option<usize>, f32)> + use<'a, I, T, U>
+fn rmse<I>(data: I) -> f32
 where
-    T: Clone + Eq + Hash,
-    U: Clone + Eq + Hash,
-    I: IntoIterator,
-    I::Item: Borrow<(T, U, f32)>,
+    I: IntoIterator<Item = (f32, f32)>,
 {
-    data.into_iter().map(|item| {
-        let (user_id, item_id, value) = item.borrow();
-        (
-            user_map.get(user_id).copied(),
-            item_map.get(item_id).copied(),
-            *value,
-        )
-    })
+    let mut sum = 0.0;
+    let mut count = 0;
+    for (v, v2) in data {
+        let error = v - v2;
+        sum += error * error;
+        count += 1;
+    }
+    (sum / count as f32).sqrt()
 }
 
 fn least_squares_cg(cui: &[Vec<(usize, f32)>], x: &mut Matrix, y: &Matrix, regularization: f32) {
