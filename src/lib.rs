@@ -124,5 +124,6 @@ mod tests {
         Recommender::fit_implicit(&data);
         Recommender::fit_implicit(data.as_slice());
         Recommender::fit_implicit(data.iter().map(|v| v));
+        Recommender::fit_implicit(data);
     }
 }
