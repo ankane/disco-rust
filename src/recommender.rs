@@ -88,52 +88,41 @@ impl<'a> RecommenderBuilder<'a> {
     }
 
     /// Creates a recommender with explicit feedback.
-    pub fn fit_explicit<
+    pub fn fit_explicit<T, U, I>(&self, train_set: I) -> Recommender<T, U>
+    where
         T: Clone + Eq + Hash + 'a,
         U: Clone + Eq + Hash + 'a,
         I: IntoIterator<Item = &'a (T, U, f32)>,
-    >(
-        &self,
-        train_set: I,
-    ) -> Recommender<T, U> {
+    {
         self.fit(train_set, None, false)
     }
 
     /// Creates a recommender with implicit feedback.
-    pub fn fit_implicit<
+    pub fn fit_implicit<T, U, I>(&self, train_set: I) -> Recommender<T, U>
+    where
         T: Clone + Eq + Hash + 'a,
         U: Clone + Eq + Hash + 'a,
         I: IntoIterator<Item = &'a (T, U, f32)>,
-    >(
-        &self,
-        train_set: I,
-    ) -> Recommender<T, U> {
+    {
         self.fit(train_set, None, true)
     }
 
     /// Creates a recommender with explicit feedback and performs cross-validation.
-    pub fn fit_eval_explicit<
+    pub fn fit_eval_explicit<T, U, I>(&self, train_set: I, valid_set: I) -> Recommender<T, U>
+    where
         T: Clone + Eq + Hash + 'a,
         U: Clone + Eq + Hash + 'a,
         I: IntoIterator<Item = &'a (T, U, f32)>,
-    >(
-        &self,
-        train_set: I,
-        valid_set: I,
-    ) -> Recommender<T, U> {
+    {
         self.fit(train_set, Some(valid_set), false)
     }
 
-    fn fit<
+    fn fit<T, U, I>(&self, train_set: I, valid_set: Option<I>, implicit: bool) -> Recommender<T, U>
+    where
         T: Clone + Eq + Hash + 'a,
         U: Clone + Eq + Hash + 'a,
         I: IntoIterator<Item = &'a (T, U, f32)>,
-    >(
-        &self,
-        train_set: I,
-        valid_set: Option<I>,
-        implicit: bool,
-    ) -> Recommender<T, U> {
+    {
         let train_set = train_set.into_iter();
 
         let mut user_map = Map::new();
@@ -348,23 +337,21 @@ pub struct Recommender<T, U> {
 
 impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     /// Creates a recommender with explicit feedback.
-    pub fn fit_explicit<'a, I: IntoIterator<Item = &'a (T, U, f32)>>(
-        train_set: I,
-    ) -> Recommender<T, U>
+    pub fn fit_explicit<'a, I>(train_set: I) -> Recommender<T, U>
     where
         T: 'a,
         U: 'a,
+        I: IntoIterator<Item = &'a (T, U, f32)>,
     {
         RecommenderBuilder::new().fit_explicit(train_set)
     }
 
     /// Creates a recommender with implicit feedback.
-    pub fn fit_implicit<'a, I: IntoIterator<Item = &'a (T, U, f32)>>(
-        train_set: I,
-    ) -> Recommender<T, U>
+    pub fn fit_implicit<'a, I>(train_set: I) -> Recommender<T, U>
     where
         T: 'a,
         U: 'a,
+        I: IntoIterator<Item = &'a (T, U, f32)>,
     {
         RecommenderBuilder::new().fit_implicit(train_set)
     }
