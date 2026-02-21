@@ -142,18 +142,8 @@ impl<'a> RecommenderBuilder<'a> {
             rated.insert((u, i));
         }
 
-        let valid_inds = valid_set.map(|vs| {
-            vs.into_iter()
-                .map(|item| {
-                    let (user_id, item_id, value) = item.borrow();
-                    (
-                        user_map.get(user_id).cloned(),
-                        item_map.get(item_id).cloned(),
-                        *value,
-                    )
-                })
-                .collect::<Vec<_>>()
-        });
+        let valid_inds =
+            valid_set.map(|vs| map_valid_set(vs, &user_map, &item_map).collect::<Vec<_>>());
 
         let global_mean = if implicit {
             0.0
@@ -456,14 +446,7 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
         I: IntoIterator,
         I::Item: Borrow<(T, U, f32)>,
     {
-        self.inner_rmse(data.into_iter().map(|item| {
-            let (user_id, item_id, value) = item.borrow();
-            (
-                self.user_map.get(user_id).cloned(),
-                self.item_map.get(item_id).cloned(),
-                *value,
-            )
-        }))
+        self.inner_rmse(map_valid_set(data, &self.user_map, &self.item_map))
     }
 
     fn inner_predict(&self, user_index: Option<&usize>, item_index: Option<&usize>) -> f32 {
@@ -488,6 +471,27 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
         }
         (sum / count as f32).sqrt()
     }
+}
+
+fn map_valid_set<'a, T, U, I>(
+    data: I,
+    user_map: &'a Map<T>,
+    item_map: &'a Map<U>,
+) -> impl Iterator<Item = (Option<usize>, Option<usize>, f32)> + use<'a, I, T, U>
+where
+    T: Clone + Eq + Hash,
+    U: Clone + Eq + Hash,
+    I: IntoIterator,
+    I::Item: Borrow<(T, U, f32)>,
+{
+    data.into_iter().map(|item| {
+        let (user_id, item_id, value) = item.borrow();
+        (
+            user_map.get(user_id).cloned(),
+            item_map.get(item_id).cloned(),
+            *value,
+        )
+    })
 }
 
 fn least_squares_cg(cui: &[(usize, usize, f32)], x: &mut Matrix, y: &Matrix, regularization: f32) {
