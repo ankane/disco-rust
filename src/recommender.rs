@@ -511,8 +511,8 @@ where
     data.into_iter().map(|item| {
         let (user_id, item_id, value) = item.borrow();
         (
-            user_map.get(user_id).cloned(),
-            item_map.get(item_id).cloned(),
+            user_map.get(user_id).copied(),
+            item_map.get(item_id).copied(),
             *value,
         )
     })
