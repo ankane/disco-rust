@@ -138,9 +138,9 @@ impl<'a> RecommenderBuilder<'a> {
 
         let mut user_map = Map::new();
         let mut item_map = Map::new();
+        let mut train_inds = Vec::with_capacity(train_set.size_hint().0);
         let mut rated = HashSet::new();
 
-        let mut train_inds = Vec::with_capacity(train_set.size_hint().0);
         for (user_id, item_id, value) in train_set {
             let u = user_map.add(user_id.clone());
             let i = item_map.add(item_id.clone());
