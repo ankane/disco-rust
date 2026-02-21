@@ -134,12 +134,13 @@ impl<'a> RecommenderBuilder<'a> {
         implicit: bool,
     ) -> Recommender<T, U> {
         let factors = self.factors as usize;
+        let train_set = train_set.into_iter();
 
         let mut user_map = Map::new();
         let mut item_map = Map::new();
         let mut rated = HashSet::new();
 
-        let mut train_inds = Vec::new();
+        let mut train_inds = Vec::with_capacity(train_set.size_hint().0);
         let mut sum = 0.0;
 
         let mut cui = Vec::new();
