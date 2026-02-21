@@ -131,22 +131,39 @@ impl<'a> RecommenderBuilder<'a> {
 
         let mut user_map = Map::new();
         let mut item_map = Map::new();
-        let mut train_inds = Vec::with_capacity(train_set.size_hint().0);
         let mut rated = HashSet::with_capacity(train_set.size_hint().0);
+
+        let mut train_inds = Vec::new();
         let mut sum = 0.0;
+        if !implicit {
+            train_inds.reserve(train_set.size_hint().0);
+        }
+
+        let mut cui = Vec::new();
+        let mut ciu = Vec::new();
 
         for item in train_set {
             let (user_id, item_id, value) = item.borrow();
             let u = user_map.add(user_id.clone());
             let i = item_map.add(item_id.clone());
-            let r = if implicit {
-                1.0 + self.alpha * (*value)
-            } else {
-                *value
-            };
-            train_inds.push((u, i, r));
             rated.insert((u, i));
-            sum += *value;
+
+            if implicit {
+                if u == cui.len() {
+                    cui.push(Vec::new())
+                }
+
+                if i == ciu.len() {
+                    ciu.push(Vec::new())
+                }
+
+                let confidence = 1.0 + self.alpha * (*value);
+                cui[u].push((i, confidence));
+                ciu[i].push((u, confidence));
+            } else {
+                train_inds.push((u, i, *value));
+                sum += *value;
+            }
         }
 
         let valid_inds =
@@ -184,11 +201,6 @@ impl<'a> RecommenderBuilder<'a> {
         if implicit {
             // conjugate gradient method
             // https://www.benfrederickson.com/fast-implicit-matrix-factorization/
-
-            let mut cui = train_inds;
-            let mut ciu = cui.iter().map(|v| (v.1, v.0, v.2)).collect::<Vec<_>>();
-            cui.sort_by_key(|v| v.0);
-            ciu.sort_by_key(|v| v.0);
 
             let regularization = self.regularization.unwrap_or(0.01);
 
@@ -497,7 +509,7 @@ where
     })
 }
 
-fn least_squares_cg(cui: &[(usize, usize, f32)], x: &mut Matrix, y: &Matrix, regularization: f32) {
+fn least_squares_cg(cui: &[Vec<(usize, f32)>], x: &mut Matrix, y: &Matrix, regularization: f32) {
     let cg_steps = 3;
 
     // calculate YtY
@@ -514,14 +526,14 @@ fn least_squares_cg(cui: &[(usize, usize, f32)], x: &mut Matrix, y: &Matrix, reg
         yty.data[i * factors + i] += regularization;
     }
 
-    for (u, row_vec) in cui.chunk_by(|a, b| a.0 == b.0).enumerate() {
+    for (u, row_vec) in cui.iter().enumerate() {
         // start from previous iteration
         let xi = x.row_mut(u);
 
         // calculate residual r = (YtCuPu - (YtCuY.dot(Xu), without computing YtCuY
         let mut r = yty.dot(xi);
         neg(&mut r);
-        for (_, i, confidence) in row_vec {
+        for (i, confidence) in row_vec {
             scaled_add(
                 &mut r,
                 confidence - (confidence - 1.0) * dot(y.row(*i), xi),
@@ -535,7 +547,7 @@ fn least_squares_cg(cui: &[(usize, usize, f32)], x: &mut Matrix, y: &Matrix, reg
         for _ in 0..cg_steps {
             // calculate Ap = YtCuYp - without actually calculating YtCuY
             let mut ap = yty.dot(&p);
-            for (_, i, confidence) in row_vec {
+            for (i, confidence) in row_vec {
                 scaled_add(&mut ap, (confidence - 1.0) * dot(y.row(*i), &p), y.row(*i));
             }
 
