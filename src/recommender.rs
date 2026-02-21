@@ -133,10 +133,14 @@ impl<'a> RecommenderBuilder<'a> {
         let mut item_map = Map::new();
         let mut rated = HashSet::with_capacity(train_set.size_hint().0);
 
-        let mut train_inds = Vec::new();
+        let mut row_inds = Vec::new();
+        let mut col_inds = Vec::new();
+        let mut values = Vec::new();
         let mut sum = 0.0;
         if !implicit {
-            train_inds.reserve(train_set.size_hint().0);
+            row_inds.reserve(train_set.size_hint().0);
+            col_inds.reserve(train_set.size_hint().0);
+            values.reserve(train_set.size_hint().0);
         }
 
         let mut cui = Vec::new();
@@ -161,7 +165,9 @@ impl<'a> RecommenderBuilder<'a> {
                 cui[u].push((i, confidence));
                 ciu[i].push((u, confidence));
             } else {
-                train_inds.push((u, i, *value));
+                row_inds.push(u);
+                col_inds.push(i);
+                values.push(*value);
                 sum += *value;
             }
         }
@@ -172,7 +178,7 @@ impl<'a> RecommenderBuilder<'a> {
         let global_mean = if implicit {
             0.0
         } else {
-            sum / train_inds.len() as f32
+            sum / values.len() as f32
         };
 
         let users = user_map.len();
@@ -246,12 +252,13 @@ impl<'a> RecommenderBuilder<'a> {
                 let mut train_loss = 0.0;
 
                 // shuffle for each iteration
-                for j in sample(&mut prng, train_inds.len()) {
-                    let (u, v, r) = train_inds[j];
+                for j in sample(&mut prng, row_inds.len()) {
+                    let u = row_inds[j];
+                    let v = col_inds[j];
 
                     let pu = recommender.user_factors.row_mut(u);
                     let qv = recommender.item_factors.row_mut(v);
-                    let e = r - dot(pu, qv);
+                    let e = values[j] - dot(pu, qv);
 
                     // slow learner
                     let mut g_hat = 0.0;
@@ -304,7 +311,7 @@ impl<'a> RecommenderBuilder<'a> {
                 }
 
                 if let Some(callback) = &self.callback {
-                    train_loss = (train_loss / train_inds.len() as f32).sqrt();
+                    train_loss = (train_loss / row_inds.len() as f32).sqrt();
 
                     let valid_loss = match &valid_inds {
                         Some(ds) => recommender.inner_rmse(ds),
