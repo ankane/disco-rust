@@ -187,7 +187,7 @@ impl<'a> RecommenderBuilder<'a> {
                 .map(|item| {
                     let (user_id, item_id, value) = item.borrow();
                     match (user_map.get(user_id), item_map.get(item_id)) {
-                        (Some(i), Some(j)) => (*i, *j, *value, true),
+                        (Some(u), Some(i)) => (*u, *i, *value, true),
                         _ => (0, 0, *value, false),
                     }
                 })
