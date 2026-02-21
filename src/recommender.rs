@@ -132,7 +132,7 @@ impl<'a> RecommenderBuilder<'a> {
         let mut user_map = Map::new();
         let mut item_map = Map::new();
         let mut train_inds = Vec::with_capacity(train_set.size_hint().0);
-        let mut rated = HashSet::new();
+        let mut rated = HashSet::with_capacity(train_set.size_hint().0);
 
         for item in train_set {
             let (user_id, item_id, value) = item.borrow();
