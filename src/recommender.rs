@@ -134,7 +134,6 @@ impl<'a> RecommenderBuilder<'a> {
         valid_set: Option<I>,
         implicit: bool,
     ) -> Recommender<T, U> {
-        let factors = self.factors as usize;
         let train_set = train_set.into_iter();
 
         let mut user_map = Map::new();
@@ -177,6 +176,7 @@ impl<'a> RecommenderBuilder<'a> {
             None => Prng::new(),
         };
 
+        let factors = self.factors as usize;
         let user_factors = create_factors(users, factors, &mut prng, end_range);
         let item_factors = create_factors(items, factors, &mut prng, end_range);
 
