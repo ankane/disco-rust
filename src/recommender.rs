@@ -518,9 +518,7 @@ fn least_squares_cg(cui: &LilMatrix, x: &mut DenseMatrix, y: &DenseMatrix, regul
     let mut yty = DenseMatrix::new(factors, factors);
     for i in 0..factors {
         for j in 0..factors {
-            yty.data[i * factors + j] = (0..y.rows)
-                .map(|k| y.data[k * factors + i] * y.data[k * factors + j])
-                .sum();
+            yty.data[i * factors + j] = y.rows().map(|r| r[i] * r[j]).sum();
         }
     }
     for i in 0..factors {
@@ -613,8 +611,7 @@ fn similar<'a, T: Clone + Eq + Hash>(
 
 fn norms(factors: &DenseMatrix) -> Vec<f32> {
     factors
-        .data
-        .chunks_exact(factors.cols)
+        .rows()
         .map(|row| row.iter().map(|v| v * v).sum::<f32>().sqrt())
         .collect()
 }
