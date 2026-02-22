@@ -20,14 +20,14 @@ impl DenseMatrix {
         self.data.chunks_exact_mut(self.cols)
     }
 
-    pub fn row_mut(&mut self, i: usize) -> &mut [f32] {
-        let idx = i * self.cols;
-        &mut self.data[idx..(idx + self.cols)]
-    }
-
     pub fn row(&self, i: usize) -> &[f32] {
         let idx = i * self.cols;
         &self.data[idx..(idx + self.cols)]
+    }
+
+    pub fn row_mut(&mut self, i: usize) -> &mut [f32] {
+        let idx = i * self.cols;
+        &mut self.data[idx..(idx + self.cols)]
     }
 
     pub fn dot(&self, x: &[f32]) -> Vec<f32> {
