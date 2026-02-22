@@ -196,12 +196,6 @@ recommender.item_factors(&item_id);
 - [A Learning-rate Schedule for Stochastic Gradient Methods to Matrix Factorization](https://www.csie.ntu.edu.tw/~cjlin/papers/libmf/mf_adaptive_pakdd.pdf)
 - [Faster Implicit Matrix Factorization](https://www.benfrederickson.com/fast-implicit-matrix-factorization/)
 
-## Upgrading
-
-### 0.3.0
-
-`Dataset` is now deprecated. Use `Vec<(T, U, f32)>` or an iterator instead.
-
 ## History
 
 View the [changelog](https://github.com/ankane/disco-rust/blob/master/CHANGELOG.md)
