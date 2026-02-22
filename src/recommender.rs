@@ -518,11 +518,11 @@ fn least_squares_cg(cui: &LilMatrix, x: &mut DenseMatrix, y: &DenseMatrix, regul
     let mut yty = DenseMatrix::new(factors, factors);
     for i in 0..factors {
         for j in 0..factors {
-            yty.data[i * factors + j] = y.rows().map(|r| r[i] * r[j]).sum();
+            yty.row_mut(i)[j] = y.rows().map(|r| r[i] * r[j]).sum();
         }
     }
     for i in 0..factors {
-        yty.data[i * factors + i] += regularization;
+        yty.row_mut(i)[i] += regularization;
     }
 
     for (u, row_vec) in cui.into_iter().enumerate() {
