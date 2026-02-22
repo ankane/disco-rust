@@ -41,32 +41,32 @@ impl DenseMatrix {
 /// A coordinate list (COO) matrix.
 pub struct CooMatrix {
     // separate vectors to avoid padding
-    row_inds: Vec<usize>,
-    col_inds: Vec<usize>,
+    row_indices: Vec<usize>,
+    col_indices: Vec<usize>,
     values: Vec<f32>,
 }
 
 impl CooMatrix {
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
-            row_inds: Vec::with_capacity(capacity),
-            col_inds: Vec::with_capacity(capacity),
+            row_indices: Vec::with_capacity(capacity),
+            col_indices: Vec::with_capacity(capacity),
             values: Vec::with_capacity(capacity),
         }
     }
 
     pub fn push(&mut self, row_index: usize, col_index: usize, value: f32) {
-        self.row_inds.push(row_index);
-        self.col_inds.push(col_index);
+        self.row_indices.push(row_index);
+        self.col_indices.push(col_index);
         self.values.push(value);
     }
 
     pub fn len(&self) -> usize {
-        self.row_inds.len()
+        self.row_indices.len()
     }
 
     pub fn get(&self, i: usize) -> (usize, usize, f32) {
-        (self.row_inds[i], self.col_inds[i], self.values[i])
+        (self.row_indices[i], self.col_indices[i], self.values[i])
     }
 }
 
@@ -75,28 +75,30 @@ impl<'a> IntoIterator for &'a CooMatrix {
     type IntoIter = Zip<Zip<Iter<'a, usize>, Iter<'a, usize>>, Iter<'a, f32>>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.row_inds
+        self.row_indices
             .iter()
-            .zip(self.col_inds.iter())
+            .zip(self.col_indices.iter())
             .zip(self.values.iter())
     }
 }
 
 /// A list of lists (LIL) matrix.
 pub struct LilMatrix {
-    data: Vec<Vec<(usize, f32)>>,
+    row_list: Vec<Vec<(usize, f32)>>,
 }
 
 impl LilMatrix {
     pub fn new() -> Self {
-        Self { data: Vec::new() }
+        Self {
+            row_list: Vec::new(),
+        }
     }
 
     pub fn push(&mut self, row_index: usize, col_index: usize, value: f32) {
-        if row_index == self.data.len() {
-            self.data.push(Vec::new());
+        if row_index == self.row_list.len() {
+            self.row_list.push(Vec::new());
         }
-        self.data[row_index].push((col_index, value));
+        self.row_list[row_index].push((col_index, value));
     }
 }
 
@@ -105,6 +107,6 @@ impl<'a> IntoIterator for &'a LilMatrix {
     type IntoIter = Iter<'a, Vec<(usize, f32)>>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.data.iter()
+        self.row_list.iter()
     }
 }
