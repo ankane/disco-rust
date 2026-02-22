@@ -176,6 +176,7 @@ impl<'a> RecommenderBuilder<'a> {
             for item in vs {
                 let (user_id, item_id, value) = item.borrow();
                 valid_data.push(
+                    // will run out of memory before ever reaching usize::MAX
                     user_map.get(user_id).copied().unwrap_or(usize::MAX),
                     item_map.get(item_id).copied().unwrap_or(usize::MAX),
                     *value,
