@@ -161,7 +161,6 @@ impl<'a> RecommenderBuilder<'a> {
             let (user_id, item_id, value) = item.borrow();
             let u = user_map.add(user_id.clone());
             let i = item_map.add(item_id.clone());
-            rated.entry(u).or_insert_with(HashSet::new).insert(i);
 
             if implicit {
                 if u == cui.len() {
@@ -181,6 +180,8 @@ impl<'a> RecommenderBuilder<'a> {
                 values.push(*value);
                 sum += *value;
             }
+
+            rated.entry(u).or_insert_with(HashSet::new).insert(i);
         }
 
         let valid_inds = valid_set.map(|vs| {
