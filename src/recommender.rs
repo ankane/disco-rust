@@ -143,6 +143,7 @@ impl<'a> RecommenderBuilder<'a> {
         let mut item_map = Map::new();
         let mut rated = HashMap::new();
 
+        // separate vectors to avoid padding
         let mut row_inds = Vec::new();
         let mut col_inds = Vec::new();
         let mut values = Vec::new();
@@ -186,15 +187,16 @@ impl<'a> RecommenderBuilder<'a> {
             vs.into_iter()
                 .map(|item| {
                     let (user_id, item_id, value) = item.borrow();
-                    let (u, uv) = match user_map.get(user_id) {
-                        Some(o) => (*o, true),
-                        None => (0, false),
-                    };
-                    let (i, iv) = match item_map.get(item_id) {
-                        Some(o) => (*o, true),
-                        None => (0, false),
-                    };
-                    (u, i, *value, uv, iv)
+                    let u = user_map.get(user_id).copied();
+                    let i = item_map.get(item_id).copied();
+                    // split Option for better packing
+                    (
+                        u.unwrap_or(0),
+                        i.unwrap_or(0),
+                        *value,
+                        u.is_some(),
+                        i.is_some(),
+                    )
                 })
                 .collect::<Vec<_>>()
         });
