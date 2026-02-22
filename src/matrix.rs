@@ -31,8 +31,7 @@ impl DenseMatrix {
     }
 
     pub fn dot(&self, x: &[f32]) -> Vec<f32> {
-        self.data
-            .chunks_exact(self.cols)
+        self.rows()
             .map(|row| row.iter().zip(x).map(|(ri, xi)| ri * xi).sum())
             .collect()
     }
