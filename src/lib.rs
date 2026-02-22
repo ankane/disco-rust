@@ -132,6 +132,20 @@ mod tests {
     }
 
     #[test]
+    fn test_validation_set_explicit() {
+        let Some(data) = load_movielens() else {
+            return;
+        };
+
+        let (train_set, valid_set) = data.split_at(80000);
+        let recommender = RecommenderBuilder::new()
+            .factors(20)
+            .fit_eval_explicit(train_set, valid_set);
+        let rmse = recommender.rmse(valid_set);
+        assert!((rmse - 0.91).abs() < 0.02);
+    }
+
+    #[test]
     fn test_user_recs_new_user() {
         let data = [(1, "A", 1.0), (1, "B", 1.0), (2, "B", 1.0)];
 
