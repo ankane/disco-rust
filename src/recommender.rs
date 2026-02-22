@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::hash::Hash;
 use std::iter::Empty;
 
@@ -142,7 +142,7 @@ impl<'a> RecommenderBuilder<'a> {
 
         let mut user_map = Map::new();
         let mut item_map = Map::new();
-        let mut rated = HashMap::new();
+        let mut rated = Vec::new();
 
         let capacity = if implicit { 0 } else { train_set.size_hint().0 };
         let mut train_data = CooMatrix::with_capacity(capacity);
@@ -165,7 +165,10 @@ impl<'a> RecommenderBuilder<'a> {
                 sum += *value;
             }
 
-            rated.entry(u).or_insert_with(HashSet::new).insert(i);
+            if u == rated.len() {
+                rated.push(HashSet::new());
+            }
+            rated[u].insert(i);
         }
 
         let valid_data = valid_set.map(|vs| {
@@ -351,7 +354,7 @@ impl Default for RecommenderBuilder<'_> {
 pub struct Recommender<T, U> {
     user_map: Map<T>,
     item_map: Map<U>,
-    rated: HashMap<usize, HashSet<usize>>,
+    rated: Vec<HashSet<usize>>,
     global_mean: f32,
     user_factors: DenseMatrix,
     item_factors: DenseMatrix,
@@ -395,7 +398,7 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
             None => return Vec::new(),
         };
 
-        let rated = self.rated.get(&i).unwrap();
+        let rated = &self.rated[i];
         let predictions = self.item_factors.dot(self.user_factors.row(i));
         let mut predictions: Vec<_> = predictions.iter().enumerate().collect();
         predictions.sort_by(|a, b| b.1.partial_cmp(a.1).unwrap());
