@@ -2,7 +2,7 @@
 
 - Added support for iterators
 - Changed `user_ids` and `item_ids` to return slice
-- Deprecated `Dataset` class
+- Deprecated `Dataset` (use `Vec<(T, U, f32)>` or an iterator instead)
 
 ## 0.2.1 (2024-06-02)
 
