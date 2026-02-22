@@ -20,26 +20,27 @@ discorec = "0.2"
 
 ## Getting Started
 
-Prep your data in the format `user_id, item_id, value`
+Prep your data in the format `(user_id, item_id, value)`
 
 ```rust
-use discorec::{Dataset, Recommender};
-
-let mut data = Dataset::new();
-data.push("user_a", "item_a", 5.0);
-data.push("user_a", "item_b", 3.5);
-data.push("user_b", "item_a", 4.0);
+let data = vec![
+    ("user_a", "item_a", 5.0),
+    ("user_a", "item_b", 3.5),
+    ("user_b", "item_a", 4.0),
+];
 ```
 
 IDs can be integers, strings, or any other hashable data type
 
 ```rust
-data.push(1, "item_a".to_string(), 5.0);
+(1, "item_a".to_string(), 5.0)
 ```
 
 If users rate items directly, this is known as explicit feedback. Fit the recommender with:
 
 ```rust
+use discorec::Recommender;
+
 let recommender = Recommender::fit_explicit(&data);
 ```
 
@@ -80,17 +81,16 @@ recommender.similar_users(&user_id, 5);
 Download the [MovieLens 100K dataset](https://grouplens.org/datasets/movielens/100k/) and use:
 
 ```rust
-use discorec::{Dataset, RecommenderBuilder};
+use discorec::RecommenderBuilder;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 fn main() {
-    let mut train_set = Dataset::with_capacity(80000);
-    let mut valid_set = Dataset::with_capacity(20000);
+    let mut data = Vec::with_capacity(100000);
 
     let file = File::open("path/to/ml-100k/u.data").unwrap();
     let rdr = BufReader::new(file);
-    for (i, line) in rdr.lines().enumerate() {
+    for line in rdr.lines() {
         let line = line.unwrap();
         let mut row = line.split('\t');
 
@@ -98,14 +98,15 @@ fn main() {
         let item_id: i32 = row.next().unwrap().parse().unwrap();
         let rating: f32 = row.next().unwrap().parse().unwrap();
 
-        let dataset = if i < 80000 { &mut train_set } else { &mut valid_set };
-        dataset.push(user_id, item_id, rating);
+        data.push((user_id, item_id, rating));
     }
+
+    let (train_set, valid_set) = data.split_at(80000);
 
     let recommender = RecommenderBuilder::new()
         .factors(20)
-        .fit_explicit(&train_set);
-    println!("RMSE: {:?}", recommender.rmse(&valid_set));
+        .fit_explicit(train_set);
+    println!("RMSE: {:?}", recommender.rmse(valid_set));
 }
 ```
 
