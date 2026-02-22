@@ -143,7 +143,6 @@ impl<'a> RecommenderBuilder<'a> {
         let mut item_map = Map::new();
         let mut rated = HashMap::new();
 
-        // separate vectors to avoid padding
         let capacity = if implicit { 0 } else { train_set.size_hint().0 };
         let mut train_inds = CooMatrix::with_capacity(capacity);
         let mut sum = 0.0;

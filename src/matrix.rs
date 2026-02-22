@@ -33,6 +33,7 @@ impl DenseMatrix {
 
 /// A coordinate list (COO) matrix.
 pub struct CooMatrix {
+    // separate vectors to avoid padding
     row_inds: Vec<usize>,
     col_inds: Vec<usize>,
     values: Vec<f32>,
