@@ -15,7 +15,7 @@
 Add this line to your application’s `Cargo.toml` under `[dependencies]`:
 
 ```toml
-discorec = "0.2"
+discorec = "0.3"
 ```
 
 ## Getting Started

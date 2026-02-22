@@ -1,4 +1,4 @@
-## 0.3.0 (unreleased)
+## 0.3.0 (2026-02-22)
 
 - Added support for iterators
 - Changed `user_ids` and `item_ids` to return slice
