@@ -145,7 +145,7 @@ impl<'a> RecommenderBuilder<'a> {
         let mut rated = HashMap::new();
 
         let capacity = if implicit { 0 } else { train_set.size_hint().0 };
-        let mut train_inds = CooMatrix::with_capacity(capacity);
+        let mut train_data = CooMatrix::with_capacity(capacity);
         let mut sum = 0.0;
 
         let mut cui = LilMatrix::new();
@@ -161,30 +161,30 @@ impl<'a> RecommenderBuilder<'a> {
                 cui.push(u, i, confidence);
                 ciu.push(i, u, confidence);
             } else {
-                train_inds.push(u, i, *value);
+                train_data.push(u, i, *value);
                 sum += *value;
             }
 
             rated.entry(u).or_insert_with(HashSet::new).insert(i);
         }
 
-        let valid_inds = valid_set.map(|vs| {
-            let mut valid_inds = CooMatrix::with_capacity(vs.size_hint().0);
+        let valid_data = valid_set.map(|vs| {
+            let mut valid_data = CooMatrix::with_capacity(vs.size_hint().0);
             for item in vs {
                 let (user_id, item_id, value) = item.borrow();
-                valid_inds.push(
+                valid_data.push(
                     user_map.get(user_id).copied().unwrap_or(usize::MAX),
                     item_map.get(item_id).copied().unwrap_or(usize::MAX),
                     *value,
                 )
             }
-            valid_inds
+            valid_data
         });
 
         let global_mean = if implicit {
             0.0
         } else {
-            sum / train_inds.len() as f32
+            sum / train_data.len() as f32
         };
 
         let users = user_map.len();
@@ -258,8 +258,8 @@ impl<'a> RecommenderBuilder<'a> {
                 let mut train_loss = 0.0;
 
                 // shuffle for each iteration
-                for j in sample(&mut prng, train_inds.len()) {
-                    let (u, v, r) = train_inds.get(j);
+                for j in sample(&mut prng, train_data.len()) {
+                    let (u, v, r) = train_data.get(j);
 
                     let pu = recommender.user_factors.row_mut(u);
                     let qv = recommender.item_factors.row_mut(v);
@@ -316,10 +316,10 @@ impl<'a> RecommenderBuilder<'a> {
                 }
 
                 if let Some(callback) = &self.callback {
-                    train_loss = (train_loss / train_inds.len() as f32).sqrt();
+                    train_loss = (train_loss / train_data.len() as f32).sqrt();
 
-                    let valid_loss = match &valid_inds {
-                        Some(vs) => rmse(vs.into_iter().map(|((u, i), v)| {
+                    let valid_loss = match &valid_data {
+                        Some(m) => rmse(m.into_iter().map(|((u, i), v)| {
                             let user_index = if *u != usize::MAX { Some(u) } else { None };
                             let item_index = if *i != usize::MAX { Some(i) } else { None };
                             (*v, recommender.inner_predict(user_index, item_index))
