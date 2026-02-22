@@ -14,7 +14,46 @@ pub use dataset::Dataset;
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+    use std::fs::File;
+    use std::io::{BufRead, BufReader};
+    use std::path::Path;
+
     use crate::{Recommender, RecommenderBuilder};
+
+    #[test]
+    fn test_explicit() {
+        let Some(data) = load_movielens() else {
+            return;
+        };
+
+        let recommender = RecommenderBuilder::new().factors(20).fit_explicit(&data);
+
+        let recs = recommender.item_recs(&"Star Wars (1977)".to_string(), 5);
+        assert_eq!(recs.len(), 5);
+
+        let item_ids = recs.iter().map(|v| v.0).collect::<Vec<_>>();
+        assert!(item_ids.contains(&&"Empire Strikes Back, The (1980)".to_string()));
+        assert!(item_ids.contains(&&"Return of the Jedi (1983)".to_string()));
+        assert!(!item_ids.contains(&&"Star Wars (1977)".to_string()));
+        assert!((recs[0].1 - 0.9972).abs() < 0.01)
+    }
+
+    #[test]
+    fn test_implicit() {
+        let Some(data) = load_movielens() else {
+            return;
+        };
+
+        let recommender = RecommenderBuilder::new().factors(20).fit_implicit(&data);
+
+        let recs = recommender.item_recs(&"Star Wars (1977)".to_string(), 5);
+        assert_eq!(recs.len(), 5);
+
+        let item_ids = recs.iter().map(|v| v.0).collect::<Vec<_>>();
+        assert!(item_ids.contains(&&"Return of the Jedi (1983)".to_string()));
+        assert!(!item_ids.contains(&&"Star Wars (1977)".to_string()));
+    }
 
     #[test]
     fn test_rated() {
@@ -126,5 +165,39 @@ mod tests {
         Recommender::fit_implicit(data.iter().map(|v| v));
         Recommender::fit_implicit(data);
         RecommenderBuilder::new().fit_eval_explicit([(1, "A", 1.0)], &[(1, "A", 1.0)]);
+    }
+
+    fn load_movielens() -> Option<Vec<(i32, String, f32)>> {
+        // https://grouplens.org/datasets/movielens/100k/
+        let Some(path) = std::env::var("MOVIELENS_100K_PATH").ok() else {
+            return None;
+        };
+        let path = Path::new(&path);
+
+        let mut movies = HashMap::with_capacity(2000);
+        let movies_file = File::open(path.join("u.item")).unwrap();
+        let rdr = BufReader::new(movies_file);
+        for line in rdr.split(b'\n') {
+            let line = line.unwrap();
+            let line = String::from_utf8_lossy(&line);
+            let mut row = line.split('|');
+            let id = row.next().unwrap().to_string();
+            let name = row.next().unwrap().to_string();
+            movies.insert(id, name);
+        }
+
+        let mut data = Vec::with_capacity(100000);
+        let ratings_file = File::open(path.join("u.data")).unwrap();
+        let rdr = BufReader::new(ratings_file);
+        for line in rdr.lines() {
+            let line = line.unwrap();
+            let mut row = line.split('\t');
+            let user_id = row.next().unwrap().parse().unwrap();
+            let item_id = movies.get(row.next().unwrap()).unwrap().to_string();
+            let rating = row.next().unwrap().parse().unwrap();
+            data.push((user_id, item_id, rating));
+        }
+
+        Some(data)
     }
 }
