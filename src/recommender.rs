@@ -517,8 +517,8 @@ fn least_squares_cg(cui: &LilMatrix, x: &mut DenseMatrix, y: &DenseMatrix, regul
     let factors = x.cols;
     let mut yty = DenseMatrix::new(factors, factors);
     for (i, row) in &mut yty.rows_mut().enumerate() {
-        for j in 0..factors {
-            row[j] = y.rows().map(|r| r[i] * r[j]).sum();
+        for (j, v) in &mut row.iter_mut().enumerate() {
+            *v = y.rows().map(|r| r[i] * r[j]).sum();
         }
         row[i] += regularization;
     }
