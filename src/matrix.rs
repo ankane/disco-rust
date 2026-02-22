@@ -1,11 +1,13 @@
-#[derive(Clone, Debug)]
-pub struct Matrix {
+use std::slice::Iter;
+
+/// A dense matrix.
+pub struct DenseMatrix {
     pub(crate) rows: usize,
     pub(crate) cols: usize,
     pub(crate) data: Vec<f32>,
 }
 
-impl Matrix {
+impl DenseMatrix {
     pub fn new(rows: usize, cols: usize) -> Self {
         let data = vec![0.0; rows * cols];
         Self { rows, cols, data }
@@ -26,5 +28,63 @@ impl Matrix {
             .chunks_exact(self.cols)
             .map(|row| row.iter().zip(x).map(|(ri, xi)| ri * xi).sum())
             .collect()
+    }
+}
+
+/// A coordinate list (COO) matrix.
+pub struct CooMatrix {
+    row_inds: Vec<usize>,
+    col_inds: Vec<usize>,
+    values: Vec<f32>,
+}
+
+impl CooMatrix {
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            row_inds: Vec::with_capacity(capacity),
+            col_inds: Vec::with_capacity(capacity),
+            values: Vec::with_capacity(capacity),
+        }
+    }
+
+    pub fn push(&mut self, row_index: usize, col_index: usize, value: f32) {
+        self.row_inds.push(row_index);
+        self.col_inds.push(col_index);
+        self.values.push(value);
+    }
+
+    pub fn len(&self) -> usize {
+        self.row_inds.len()
+    }
+
+    pub fn get(&self, i: usize) -> (usize, usize, f32) {
+        (self.row_inds[i], self.col_inds[i], self.values[i])
+    }
+}
+
+/// A list of lists (LIL) matrix.
+pub struct LilMatrix {
+    data: Vec<Vec<(usize, f32)>>,
+}
+
+impl LilMatrix {
+    pub fn new() -> Self {
+        Self { data: Vec::new() }
+    }
+
+    pub fn push(&mut self, row_index: usize, col_index: usize, value: f32) {
+        if row_index == self.data.len() {
+            self.data.push(Vec::new());
+        }
+        self.data[row_index].push((col_index, value));
+    }
+}
+
+impl<'a> IntoIterator for &'a LilMatrix {
+    type Item = &'a Vec<(usize, f32)>;
+    type IntoIter = Iter<'a, Vec<(usize, f32)>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.data.iter()
     }
 }

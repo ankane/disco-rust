@@ -5,7 +5,7 @@ use std::hash::Hash;
 use std::iter::Empty;
 
 use crate::map::Map;
-use crate::matrix::Matrix;
+use crate::matrix::{CooMatrix, DenseMatrix, LilMatrix};
 use crate::prng::Prng;
 
 /// Information about a training iteration.
@@ -144,18 +144,12 @@ impl<'a> RecommenderBuilder<'a> {
         let mut rated = HashMap::new();
 
         // separate vectors to avoid padding
-        let mut row_inds = Vec::new();
-        let mut col_inds = Vec::new();
-        let mut values = Vec::new();
+        let capacity = if implicit { 0 } else { train_set.size_hint().0 };
+        let mut train_inds = CooMatrix::with_capacity(capacity);
         let mut sum = 0.0;
-        if !implicit {
-            row_inds.reserve(train_set.size_hint().0);
-            col_inds.reserve(train_set.size_hint().0);
-            values.reserve(train_set.size_hint().0);
-        }
 
-        let mut cui = Vec::new();
-        let mut ciu = Vec::new();
+        let mut cui = LilMatrix::new();
+        let mut ciu = LilMatrix::new();
 
         for item in train_set {
             let (user_id, item_id, value) = item.borrow();
@@ -163,21 +157,11 @@ impl<'a> RecommenderBuilder<'a> {
             let i = item_map.add(item_id.clone());
 
             if implicit {
-                if u == cui.len() {
-                    cui.push(Vec::new())
-                }
-
-                if i == ciu.len() {
-                    ciu.push(Vec::new())
-                }
-
                 let confidence = 1.0 + self.alpha * (*value);
-                cui[u].push((i, confidence));
-                ciu[i].push((u, confidence));
+                cui.push(u, i, confidence);
+                ciu.push(i, u, confidence);
             } else {
-                row_inds.push(u);
-                col_inds.push(i);
-                values.push(*value);
+                train_inds.push(u, i, *value);
                 sum += *value;
             }
 
@@ -205,7 +189,7 @@ impl<'a> RecommenderBuilder<'a> {
         let global_mean = if implicit {
             0.0
         } else {
-            sum / row_inds.len() as f32
+            sum / train_inds.len() as f32
         };
 
         let users = user_map.len();
@@ -279,10 +263,8 @@ impl<'a> RecommenderBuilder<'a> {
                 let mut train_loss = 0.0;
 
                 // shuffle for each iteration
-                for j in sample(&mut prng, row_inds.len()) {
-                    let u = row_inds[j];
-                    let v = col_inds[j];
-                    let r = values[j];
+                for j in sample(&mut prng, train_inds.len()) {
+                    let (u, v, r) = train_inds.get(j);
 
                     let pu = recommender.user_factors.row_mut(u);
                     let qv = recommender.item_factors.row_mut(v);
@@ -339,7 +321,7 @@ impl<'a> RecommenderBuilder<'a> {
                 }
 
                 if let Some(callback) = &self.callback {
-                    train_loss = (train_loss / row_inds.len() as f32).sqrt();
+                    train_loss = (train_loss / train_inds.len() as f32).sqrt();
 
                     let valid_loss = match &valid_inds {
                         Some(ds) => rmse(ds.iter().map(|(u, i, v, uv, iv)| {
@@ -376,8 +358,8 @@ pub struct Recommender<T, U> {
     item_map: Map<U>,
     rated: HashMap<usize, HashSet<usize>>,
     global_mean: f32,
-    user_factors: Matrix,
-    item_factors: Matrix,
+    user_factors: DenseMatrix,
+    item_factors: DenseMatrix,
 
     // use lazy initialization to save memory
     // https://doc.rust-lang.org/std/cell/#implementation-details-of-logically-immutable-methods
@@ -529,12 +511,12 @@ where
     (sum / count as f32).sqrt()
 }
 
-fn least_squares_cg(cui: &[Vec<(usize, f32)>], x: &mut Matrix, y: &Matrix, regularization: f32) {
+fn least_squares_cg(cui: &LilMatrix, x: &mut DenseMatrix, y: &DenseMatrix, regularization: f32) {
     let cg_steps = 3;
 
     // calculate YtY
     let factors = x.cols;
-    let mut yty = Matrix::new(factors, factors);
+    let mut yty = DenseMatrix::new(factors, factors);
     for i in 0..factors {
         for j in 0..factors {
             yty.data[i * factors + j] = (0..y.rows)
@@ -546,7 +528,7 @@ fn least_squares_cg(cui: &[Vec<(usize, f32)>], x: &mut Matrix, y: &Matrix, regul
         yty.data[i * factors + i] += regularization;
     }
 
-    for (u, row_vec) in cui.iter().enumerate() {
+    for (u, row_vec) in cui.into_iter().enumerate() {
         // start from previous iteration
         let xi = x.row_mut(u);
 
@@ -590,8 +572,8 @@ fn least_squares_cg(cui: &[Vec<(usize, f32)>], x: &mut Matrix, y: &Matrix, regul
     }
 }
 
-fn create_factors(rows: usize, cols: usize, prng: &mut Prng, end_range: f32) -> Matrix {
-    let mut m = Matrix::new(rows, cols);
+fn create_factors(rows: usize, cols: usize, prng: &mut Prng, end_range: f32) -> DenseMatrix {
+    let mut m = DenseMatrix::new(rows, cols);
     for v in &mut m.data {
         *v = (prng.next() as f32) * end_range;
     }
@@ -600,7 +582,7 @@ fn create_factors(rows: usize, cols: usize, prng: &mut Prng, end_range: f32) -> 
 
 fn similar<'a, T: Clone + Eq + Hash>(
     map: &'a Map<T>,
-    factors: &Matrix,
+    factors: &DenseMatrix,
     norms: &RefCell<Option<Vec<f32>>>,
     id: &T,
     count: usize,
@@ -630,7 +612,7 @@ fn similar<'a, T: Clone + Eq + Hash>(
         .collect()
 }
 
-fn norms(factors: &Matrix) -> Vec<f32> {
+fn norms(factors: &DenseMatrix) -> Vec<f32> {
     factors
         .data
         .chunks_exact(factors.cols)
