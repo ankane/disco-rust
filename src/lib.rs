@@ -36,7 +36,7 @@ mod tests {
         assert!(item_ids.contains(&&"Empire Strikes Back, The (1980)".to_string()));
         assert!(item_ids.contains(&&"Return of the Jedi (1983)".to_string()));
         assert!(!item_ids.contains(&&"Star Wars (1977)".to_string()));
-        assert!((recs[0].1 - 0.9972).abs() < 0.01)
+        assert!((recs[0].1 - 0.9972).abs() < 0.01);
     }
 
     #[test]
@@ -101,6 +101,15 @@ mod tests {
     }
 
     #[test]
+    fn test_similar_users() {
+        let data = [(1, "A", 1.0), (1, "B", 1.0), (2, "B", 1.0)];
+
+        let recommender = Recommender::fit_explicit(&data);
+        assert_eq!(recommender.similar_users(&1, 5).len(), 1);
+        assert_eq!(recommender.similar_users(&100000, 5).len(), 0);
+    }
+
+    #[test]
     fn test_ids() {
         let data = [(1, "A", 1.0), (1, "B", 1.0), (2, "B", 1.0)];
 
@@ -120,6 +129,30 @@ mod tests {
 
         assert_eq!(recommender.user_factors(&3), None);
         assert_eq!(recommender.item_factors(&"C"), None);
+    }
+
+    #[test]
+    fn test_user_recs_new_user() {
+        let data = [(1, "A", 1.0), (1, "B", 1.0), (2, "B", 1.0)];
+
+        let recommender = Recommender::fit_explicit(data);
+        assert_eq!(recommender.user_recs(&1000, 5).len(), 0)
+    }
+
+    #[test]
+    fn test_predict_new_user() {
+        let data = [(1, "A", 1.0), (1, "B", 1.0), (2, "B", 1.0)];
+
+        let recommender = Recommender::fit_explicit(data);
+        assert_eq!(recommender.predict(&3, &"A"), recommender.global_mean());
+    }
+
+    #[test]
+    fn test_predict_new_item() {
+        let data = [(1, "A", 1.0), (1, "B", 1.0), (2, "B", 1.0)];
+
+        let recommender = Recommender::fit_explicit(data);
+        assert_eq!(recommender.predict(&1, &"C"), recommender.global_mean());
     }
 
     #[test]
