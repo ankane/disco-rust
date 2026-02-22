@@ -1,3 +1,4 @@
+use std::iter::Zip;
 use std::slice::{ChunksExact, ChunksExactMut, Iter};
 
 /// A dense matrix.
@@ -66,6 +67,18 @@ impl CooMatrix {
 
     pub fn get(&self, i: usize) -> (usize, usize, f32) {
         (self.row_inds[i], self.col_inds[i], self.values[i])
+    }
+}
+
+impl<'a> IntoIterator for &'a CooMatrix {
+    type Item = ((&'a usize, &'a usize), &'a f32);
+    type IntoIter = Zip<Zip<Iter<'a, usize>, Iter<'a, usize>>, Iter<'a, f32>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.row_inds
+            .iter()
+            .zip(self.col_inds.iter())
+            .zip(self.values.iter())
     }
 }
 

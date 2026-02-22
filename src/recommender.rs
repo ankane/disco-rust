@@ -138,6 +138,7 @@ impl<'a> RecommenderBuilder<'a> {
         J::Item: Borrow<(T, U, f32)>,
     {
         let train_set = train_set.into_iter();
+        let valid_set = valid_set.map(|v| v.into_iter());
 
         let mut user_map = Map::new();
         let mut item_map = Map::new();
@@ -168,21 +169,16 @@ impl<'a> RecommenderBuilder<'a> {
         }
 
         let valid_inds = valid_set.map(|vs| {
-            vs.into_iter()
-                .map(|item| {
-                    let (user_id, item_id, value) = item.borrow();
-                    let u = user_map.get(user_id).copied();
-                    let i = item_map.get(item_id).copied();
-                    // split Option for better packing
-                    (
-                        u.unwrap_or(0),
-                        i.unwrap_or(0),
-                        *value,
-                        u.is_some(),
-                        i.is_some(),
-                    )
-                })
-                .collect::<Vec<_>>()
+            let mut valid_inds = CooMatrix::with_capacity(vs.size_hint().0);
+            for item in vs {
+                let (user_id, item_id, value) = item.borrow();
+                valid_inds.push(
+                    user_map.get(user_id).copied().unwrap_or(usize::MAX),
+                    item_map.get(item_id).copied().unwrap_or(usize::MAX),
+                    *value,
+                )
+            }
+            valid_inds
         });
 
         let global_mean = if implicit {
@@ -323,9 +319,9 @@ impl<'a> RecommenderBuilder<'a> {
                     train_loss = (train_loss / train_inds.len() as f32).sqrt();
 
                     let valid_loss = match &valid_inds {
-                        Some(ds) => rmse(ds.iter().map(|(u, i, v, uv, iv)| {
-                            let user_index = if *uv { Some(u) } else { None };
-                            let item_index = if *iv { Some(i) } else { None };
+                        Some(vs) => rmse(vs.into_iter().map(|((u, i), v)| {
+                            let user_index = if *u != usize::MAX { Some(u) } else { None };
+                            let item_index = if *i != usize::MAX { Some(i) } else { None };
                             (*v, recommender.inner_predict(user_index, item_index))
                         })),
                         None => f32::NAN,
