@@ -516,13 +516,11 @@ fn least_squares_cg(cui: &LilMatrix, x: &mut DenseMatrix, y: &DenseMatrix, regul
     // calculate YtY
     let factors = x.cols;
     let mut yty = DenseMatrix::new(factors, factors);
-    for i in 0..factors {
+    for (i, row) in &mut yty.rows_mut().enumerate() {
         for j in 0..factors {
-            yty.row_mut(i)[j] = y.rows().map(|r| r[i] * r[j]).sum();
+            row[j] = y.rows().map(|r| r[i] * r[j]).sum();
         }
-    }
-    for i in 0..factors {
-        yty.row_mut(i)[i] += regularization;
+        row[i] += regularization;
     }
 
     for (u, row_vec) in cui.into_iter().enumerate() {
@@ -571,8 +569,10 @@ fn least_squares_cg(cui: &LilMatrix, x: &mut DenseMatrix, y: &DenseMatrix, regul
 
 fn create_factors(rows: usize, cols: usize, prng: &mut Prng, end_range: f32) -> DenseMatrix {
     let mut m = DenseMatrix::new(rows, cols);
-    for v in &mut m.data {
-        *v = (prng.next() as f32) * end_range;
+    for row in &mut m.rows_mut() {
+        for v in row {
+            *v = (prng.next() as f32) * end_range;
+        }
     }
     m
 }

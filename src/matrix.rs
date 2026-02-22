@@ -1,9 +1,9 @@
-use std::slice::{ChunksExact, Iter};
+use std::slice::{ChunksExact, ChunksExactMut, Iter};
 
 /// A dense matrix.
 pub struct DenseMatrix {
     pub(crate) cols: usize,
-    pub(crate) data: Vec<f32>,
+    data: Vec<f32>,
 }
 
 impl DenseMatrix {
@@ -14,6 +14,10 @@ impl DenseMatrix {
 
     pub fn rows(&self) -> ChunksExact<'_, f32> {
         self.data.chunks_exact(self.cols)
+    }
+
+    pub fn rows_mut(&mut self) -> ChunksExactMut<'_, f32> {
+        self.data.chunks_exact_mut(self.cols)
     }
 
     pub fn row_mut(&mut self, i: usize) -> &mut [f32] {
