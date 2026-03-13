@@ -205,6 +205,32 @@ mod tests {
     }
 
     #[test]
+    fn test_empty_explicit() {
+        let recommender = Recommender::<i32, &str>::fit_explicit(&[]);
+        assert!(recommender.user_ids().is_empty());
+        assert!(recommender.item_ids().is_empty());
+    }
+
+    #[test]
+    fn test_empty_explicit_eval() {
+        let recommender: Recommender<i32, &str> = RecommenderBuilder::new()
+            .callback(|info| {
+                assert!(info.train_loss.is_nan());
+                assert!(info.valid_loss.is_nan());
+            })
+            .fit_eval_explicit(&[], &[]);
+        assert!(recommender.user_ids().is_empty());
+        assert!(recommender.item_ids().is_empty());
+    }
+
+    #[test]
+    fn test_empty_implicit() {
+        let recommender = Recommender::<i32, &str>::fit_implicit(&[]);
+        assert!(recommender.user_ids().is_empty());
+        assert!(recommender.item_ids().is_empty());
+    }
+
+    #[test]
     fn test_data() {
         let data = vec![(1, "A", 1.0)];
         Recommender::fit_implicit(&data);
