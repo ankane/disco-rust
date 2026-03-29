@@ -200,19 +200,8 @@ impl<'a> RecommenderBuilder<'a> {
         };
         let end_range = if implicit { 0.01 } else { 0.1 };
 
-        let user_factors = create_factors(users, factors, &mut prng, end_range);
-        let item_factors = create_factors(items, factors, &mut prng, end_range);
-
-        let mut recommender = Recommender {
-            user_map,
-            item_map,
-            rated,
-            global_mean,
-            user_factors,
-            item_factors,
-            user_norms: RefCell::new(None),
-            item_norms: RefCell::new(None),
-        };
+        let mut user_factors = create_factors(users, factors, &mut prng, end_range);
+        let mut item_factors = create_factors(items, factors, &mut prng, end_range);
 
         if implicit {
             // conjugate gradient method
@@ -221,18 +210,8 @@ impl<'a> RecommenderBuilder<'a> {
             let regularization = self.regularization.unwrap_or(0.01);
 
             for iteration in 0..self.iterations {
-                least_squares_cg(
-                    &cui,
-                    &mut recommender.user_factors,
-                    &recommender.item_factors,
-                    regularization,
-                );
-                least_squares_cg(
-                    &ciu,
-                    &mut recommender.item_factors,
-                    &recommender.user_factors,
-                    regularization,
-                );
+                least_squares_cg(&cui, &mut user_factors, &item_factors, regularization);
+                least_squares_cg(&ciu, &mut item_factors, &user_factors, regularization);
 
                 if let Some(callback) = &self.callback {
                     let info = FitInfo {
@@ -265,8 +244,8 @@ impl<'a> RecommenderBuilder<'a> {
                 for j in sample(&mut prng, train_data.len()) {
                     let (u, v, r) = train_data.get(j);
 
-                    let pu = recommender.user_factors.row_mut(u);
-                    let qv = recommender.item_factors.row_mut(v);
+                    let pu = user_factors.row_mut(u);
+                    let qv = item_factors.row_mut(v);
                     let e = r - dot(pu, qv);
 
                     // slow learner
@@ -326,7 +305,14 @@ impl<'a> RecommenderBuilder<'a> {
                         Some(m) => rmse(m.into_iter().map(|((u, i), v)| {
                             let user_index = if *u != usize::MAX { Some(u) } else { None };
                             let item_index = if *i != usize::MAX { Some(i) } else { None };
-                            (*v, recommender.inner_predict(user_index, item_index))
+                            let prediction = inner_predict(
+                                user_index,
+                                item_index,
+                                &user_factors,
+                                &item_factors,
+                                global_mean,
+                            );
+                            (*v, prediction)
                         })),
                         None => f32::NAN,
                     };
@@ -341,7 +327,16 @@ impl<'a> RecommenderBuilder<'a> {
             }
         }
 
-        recommender
+        Recommender {
+            user_map,
+            item_map,
+            rated,
+            global_mean,
+            user_factors,
+            item_factors,
+            user_norms: RefCell::new(None),
+            item_norms: RefCell::new(None),
+        }
     }
 }
 
@@ -389,7 +384,13 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
 
     /// Returns the predicted rating for a specific user and item.
     pub fn predict(&self, user_id: &T, item_id: &U) -> f32 {
-        self.inner_predict(self.user_map.get(user_id), self.item_map.get(item_id))
+        inner_predict(
+            self.user_map.get(user_id),
+            self.item_map.get(item_id),
+            &self.user_factors,
+            &self.item_factors,
+            self.global_mean,
+        )
     }
 
     /// Returns recommendations for a user.
@@ -487,12 +488,19 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
             (*value, self.predict(user_id, item_id))
         }))
     }
+}
 
-    fn inner_predict(&self, user_index: Option<&usize>, item_index: Option<&usize>) -> f32 {
-        match (user_index, item_index) {
-            (Some(i), Some(j)) => dot(self.user_factors.row(*i), self.item_factors.row(*j)),
-            _ => self.global_mean,
-        }
+#[inline]
+fn inner_predict(
+    user_index: Option<&usize>,
+    item_index: Option<&usize>,
+    user_factors: &DenseMatrix,
+    item_factors: &DenseMatrix,
+    global_mean: f32,
+) -> f32 {
+    match (user_index, item_index) {
+        (Some(i), Some(j)) => dot(user_factors.row(*i), item_factors.row(*j)),
+        _ => global_mean,
     }
 }
 
