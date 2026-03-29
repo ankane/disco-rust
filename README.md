@@ -126,7 +126,7 @@ Disco uses high-performance matrix factorization.
 Specify the number of factors and iterations
 
 ```rust
-RecommenderBuilder::new()
+let recommender = RecommenderBuilder::new()
     .factors(8)
     .iterations(20)
     .fit_explicit(&train_set);
@@ -137,7 +137,7 @@ RecommenderBuilder::new()
 Pass a callback to show progress
 
 ```rust
-RecommenderBuilder::new()
+let recommender = RecommenderBuilder::new()
     .callback(|info| println!("{:?}", info))
     .fit_explicit(&train_set);
 ```
@@ -149,7 +149,7 @@ Note: `train_loss` and `valid_loss` are not available for implicit feedback
 Pass a validation set with explicit feedback
 
 ```rust
-RecommenderBuilder::new()
+let recommender = RecommenderBuilder::new()
     .callback(|info| println!("{:?}", info))
     .fit_eval_explicit(&train_set, &valid_set);
 ```
