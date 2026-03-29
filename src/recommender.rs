@@ -490,7 +490,6 @@ impl<T: Clone + Eq + Hash, U: Clone + Eq + Hash> Recommender<T, U> {
     }
 }
 
-#[inline]
 fn inner_predict(
     user_index: Option<&usize>,
     item_index: Option<&usize>,
