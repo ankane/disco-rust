@@ -27,7 +27,7 @@ impl<T: Clone + Eq + Hash> Map<T> {
                 v.insert(i);
                 self.vec.push(key);
             }
-        };
+        }
         i
     }
 

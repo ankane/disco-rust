@@ -180,7 +180,7 @@ impl<'a> RecommenderBuilder<'a> {
                     user_map.get(user_id).copied().unwrap_or(usize::MAX),
                     item_map.get(item_id).copied().unwrap_or(usize::MAX),
                     *value,
-                )
+                );
             }
             valid_data
         });
